@@ -708,7 +708,7 @@ public class Main extends javax.swing.JFrame{
         buttonLoad = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("Java Bad Eye Tracking");
+        setTitle("Bad Eye Tracking 1.0.0");
 
         panelInputs.setLayout(new javax.swing.BoxLayout(panelInputs, javax.swing.BoxLayout.PAGE_AXIS));
 
@@ -758,7 +758,7 @@ public class Main extends javax.swing.JFrame{
         );
         panelStatusLightLeftLayout.setVerticalGroup(
             panelStatusLightLeftLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 397, Short.MAX_VALUE)
+            .addGap(0, 305, Short.MAX_VALUE)
         );
 
         panelInputStatusLeft.add(panelStatusLightLeft, java.awt.BorderLayout.CENTER);
@@ -780,7 +780,7 @@ public class Main extends javax.swing.JFrame{
         );
         panelStatusLightRightLayout.setVerticalGroup(
             panelStatusLightRightLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 397, Short.MAX_VALUE)
+            .addGap(0, 305, Short.MAX_VALUE)
         );
 
         panelInputStatusRight.add(panelStatusLightRight, java.awt.BorderLayout.CENTER);
@@ -981,6 +981,7 @@ public class Main extends javax.swing.JFrame{
         });
 
         boxAntiFlicker.setText("Anti-Flicker");
+        boxAntiFlicker.setToolTipText("Ignores new frames that that differ greatly from the previous frame");
 
         javax.swing.GroupLayout panelControlsEyeCroppingLayout = new javax.swing.GroupLayout(panelControlsEyeCropping);
         panelControlsEyeCropping.setLayout(panelControlsEyeCroppingLayout);
@@ -1249,17 +1250,20 @@ public class Main extends javax.swing.JFrame{
         jLabel28.setText("STABILITY");
 
         boxCombineLook.setText("Combined eye look");
+        boxCombineLook.setToolTipText("<html>Combine the look direction of both eyes<br>\nThe combined direction is the average of each, weighted based on how recently the last frame was recieved");
 
         jLabel17.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel17.setText("Combined eye threshold");
 
         sliderBlinkThreshold.setMaximum(1000);
+        sliderBlinkThreshold.setToolTipText("<html>Threshold at which both eyes will respond to one eye.<br>\n(Same weight as is used for combined eye look)<br>");
         sliderBlinkThreshold.setValue(500);
 
         labelEyeLock.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         labelEyeLock.setText("Eye Lock Time");
 
         sliderEyeLockThreshold.setMaximum(20000);
+        sliderEyeLockThreshold.setToolTipText("<html>How long it takes for the fallback eye open state to settle.<br>\n(Adjust this if your eyes are stuck open or closed when the feed cuts out)");
         sliderEyeLockThreshold.setValue(5000);
         sliderEyeLockThreshold.addChangeListener(new javax.swing.event.ChangeListener() {
             public void stateChanged(javax.swing.event.ChangeEvent evt) {
@@ -1268,6 +1272,7 @@ public class Main extends javax.swing.JFrame{
         });
 
         boxAutoShutdown.setText("Auto shutdown (min)");
+        boxAutoShutdown.setToolTipText("<html>Automatically closes BadEyeTracking after the specified time, in minutes.<br>\nSometimes the program frezzes up, I'm not sure why.<br>\nThis is designed to be used with an auto restart script to keep it running.");
         boxAutoShutdown.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 boxAutoShutdownActionPerformed(evt);
@@ -1275,6 +1280,7 @@ public class Main extends javax.swing.JFrame{
         });
 
         spinnerAutoShutdown.setModel(new javax.swing.SpinnerNumberModel(10, 1, null, 1));
+        spinnerAutoShutdown.setToolTipText("<html>Automatically closes BadEyeTracking after the specified time, in minutes.<br> Sometimes the program frezzes up, I'm not sure why.<br> This is designed to be used with an auto restart script to keep it running.");
 
         javax.swing.GroupLayout panelControlsStabilityLayout = new javax.swing.GroupLayout(panelControlsStability);
         panelControlsStability.setLayout(panelControlsStabilityLayout);
@@ -1369,7 +1375,7 @@ public class Main extends javax.swing.JFrame{
             .addGroup(panelControlsOSCLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(panelControlsOSCLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jPanel11, javax.swing.GroupLayout.DEFAULT_SIZE, 435, Short.MAX_VALUE)
+                    .addComponent(jPanel11, javax.swing.GroupLayout.DEFAULT_SIZE, 280, Short.MAX_VALUE)
                     .addComponent(jLabel24, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
@@ -2008,10 +2014,10 @@ public class Main extends javax.swing.JFrame{
     private double getWeight(int eye){
         if(eye==0){//left
             long lag = System.nanoTime()-lastLeftEye;
-            return Math.exp(-lag/1_000_000_000l);
+            return Math.exp(-lag/1_000_000_000d);
         }else{//right
             long lag = System.nanoTime()-lastRightEye;
-            return Math.exp(-lag/1_000_000_000l);
+            return Math.exp(-lag/1_000_000_000d);
         }
     }
     private float getWeighted(float left, float right){
