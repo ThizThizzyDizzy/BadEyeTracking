@@ -44,6 +44,8 @@ public class Main extends javax.swing.JFrame{
     private boolean leftLightActive;
     private boolean rightLightActive;
     private int maxFPS;
+    private long leftLastUpdate = -1;
+    private long rightLastUpdate = -1;
     private void updateOSC(){
 //        debugText = r(lxOut)+" "+r(lyOut)+" | "+r(rxOut)+" "+r(ryOut)+" "+(System.nanoTime()-lastLeftEye)/1000000+" "+(System.nanoTime()-lastRightEye)/1000000;
         try{
@@ -52,10 +54,12 @@ public class Main extends javax.swing.JFrame{
                 osc.send(new OSCMessage("/avatar/parameters/"+boxLeftEyeX.getText(), Arrays.asList(boxCombineLook.isSelected()?xOut:lxOut)));
                 osc.send(new OSCMessage("/avatar/parameters/"+boxLeftEyeY.getText(), Arrays.asList(boxCombineLook.isSelected()?yOut:lyOut)));
                 osc.send(new OSCMessage("/avatar/parameters/"+boxLeftEyeBlink.getText(), Arrays.asList(boxInvertBlink.isSelected()?lOpen:!lOpen)));
+                if(boxEyeOpenness.isSelected())osc.send(new OSCMessage("/avatar/parameters/"+boxLeftEyeOpenness.getText(), Arrays.asList(boxCombineLook.isSelected()?oOut:loOut)));
 //        }else{
                 osc.send(new OSCMessage("/avatar/parameters/"+boxRightEyeX.getText(), Arrays.asList(boxCombineLook.isSelected()?xOut:rxOut)));
                 osc.send(new OSCMessage("/avatar/parameters/"+boxRightEyeY.getText(), Arrays.asList(boxCombineLook.isSelected()?yOut:ryOut)));
                 osc.send(new OSCMessage("/avatar/parameters/"+boxRightEyeBlink.getText(), Arrays.asList(boxInvertBlink.isSelected()?rOpen:!rOpen)));
+                if(boxEyeOpenness.isSelected())osc.send(new OSCMessage("/avatar/parameters/"+boxRightEyeOpenness.getText(), Arrays.asList(boxCombineLook.isSelected()?oOut:roOut)));
 //        }
 //            )));
         }catch(IOException|OSCSerializeException ex){
@@ -136,6 +140,14 @@ public class Main extends javax.swing.JFrame{
             startRightEyeThread();
             Thread t = new Thread(() -> {
                 while(true){
+                    if(leftLastUpdate!=-1&&(System.nanoTime()-leftLastUpdate)/1_000_000>(int)spinnerReconnectTimeout.getValue()){
+                        startLeftEyeThread();
+                        leftLastUpdate = -1;
+                    }
+                    if(rightLastUpdate!=-1&&(System.nanoTime()-rightLastUpdate)/1_000_000>(int)spinnerReconnectTimeout.getValue()){
+                        startRightEyeThread();
+                        rightLastUpdate = -1;
+                    }
                     try{
                         synchronized(leftFPS){
                             for(Iterator<Long> it = leftFPS.iterator(); it.hasNext();){
@@ -168,6 +180,7 @@ public class Main extends javax.swing.JFrame{
                         if(rightLightActive)panelStatusLightRight.setBackground(colorScale(rightFPS.size()*1f/maxFPS));
                         xOut = getWeighted(lxOut, rxOut);
                         yOut = getWeighted(lyOut, ryOut);
+                        oOut = getWeighted(loOut, roOut);
                         double lw = getWeight(0);
                         double rw = getWeight(1);
                         boolean lb = lw<1-sliderBlinkThreshold.getValue()/1000f;
@@ -179,11 +192,13 @@ public class Main extends javax.swing.JFrame{
                             lOpen = rOpen;
                             lxOut = rxOut;
                             lyOut = ryOut;
+                            loOut = roOut;
                         }
                         if(rb&&!lb){
                             rOpen = lOpen;
                             rxOut = lxOut;
                             ryOut = lyOut;
+                            roOut = loOut;
                         }
                         updateOSC();
                         Thread.sleep(10);
@@ -222,12 +237,14 @@ public class Main extends javax.swing.JFrame{
     private BufferedImage leftEyeRaw, rightEyeRaw, leftEye, rightEye;
     private static int minThreshold = 0;
     private static int maxThreshold = 300;
-    private static int lx,ly,rx,ry;
+    private static int lx,ly,rx,ry,lo,ro;
     private static int llx,lux,lrx,ldx,lcx,lly,luy,lry,ldy,lcy;
     private static int rlx,rux,rrx,rdx,rcx,rly,ruy,rry,rdy,rcy;
+    private static int llo,luo,lro,ldo,lco,rlo,ruo,rro,rdo,rco,loo,roo;
     private static int lfp1x,lfp1y,lfp2x,lfp2y;
     private static int rfp1x,rfp1y,rfp2x,rfp2y;
     private static float lxOut,lyOut,rxOut,ryOut,xOut,yOut;
+    private static float loOut,roOut, oOut;
     private static boolean lOpen = true,rOpen = true;
     private static long lastRightEye, lastLeftEye;
     private static String statusLeft, statusRight;
@@ -238,11 +255,12 @@ public class Main extends javax.swing.JFrame{
         Thread[] lef = new Thread[1];
         Thread left = new Thread(() -> {
             while(leftEyeThread==lef[0]){
+                leftLastUpdate = System.nanoTime();
                 try{
                     panelStatusLightLeft.setBackground(Color.pink);
                     statusLeft = "Connecting";
                     leftLightActive = false;
-                    startImageStream(textFieldAddressLeft.getText(), (im)->{
+                    startImageStream(textFieldAddressLeft.getText(),0, (im)->{
                         synchronized(leftFPS){
                             leftFPS.add(System.nanoTime());
                         }
@@ -281,11 +299,12 @@ public class Main extends javax.swing.JFrame{
         Thread[] rig = new Thread[1];
         Thread right = new Thread(() -> {
             while(rightEyeThread==rig[0]){
+                rightLastUpdate = System.nanoTime();
                 try{
                     panelStatusLightRight.setBackground(Color.pink);
                     statusRight = "Connecting";
                     rightLightActive = false;
-                    startImageStream(textFieldAddressRight.getText(), (im)->{
+                    startImageStream(textFieldAddressRight.getText(),1, (im)->{
                         synchronized(rightFPS){
                             rightFPS.add(System.nanoTime());
                         }
@@ -350,7 +369,7 @@ public class Main extends javax.swing.JFrame{
         }
         return is[0];
     }
-    public static void startImageStream(String link, Consumer<BufferedImage> stream) throws Exception{
+    public static void startImageStream(String link, int eye, Consumer<BufferedImage> stream) throws Exception{
         URL url = new URL(link);
         URLConnection connection = url.openConnection();
         connection.setDefaultUseCaches(false);
@@ -387,7 +406,7 @@ public class Main extends javax.swing.JFrame{
                     for(int j = 0; j<len; j++){
                         bytes[j] = (byte)inputstream.read();
                     }
-                    File f = new File("out.txt");
+                    File f = new File("out"+eye+".txt");
                     FileOutputStream fos = new FileOutputStream(f);
                     fos.write(bytes);
                     fos.close();
@@ -399,10 +418,10 @@ public class Main extends javax.swing.JFrame{
             }
         }
     }
-
     private BufferedImage process2(BufferedImage im, int eyeIndex){
         if(im==null)return im;
         int X = 0, Y = 0, count = 0;
+        int ocount = 0;//numba of pixels found for eye openness
         int fp1x = eyeIndex==0?lfp1x:rfp1x;
         int fp1y = eyeIndex==0?lfp1y:rfp1y;
         int fp2x = eyeIndex==0?lfp2x:rfp2x;
@@ -411,6 +430,7 @@ public class Main extends javax.swing.JFrame{
         int bgr = bg.getRed();
         int bgg = bg.getGreen();
         int bgb = bg.getBlue();
+        Color redorange = new Color(255, 64, 0);
         for(int x = 0; x<im.getWidth(); x++){
             for(int y = 0; y<im.getHeight(); y++){
                 Color c = new Color(im.getRGB(x, y));
@@ -426,6 +446,14 @@ public class Main extends javax.swing.JFrame{
                     Y+=y;
                     count++;
                     im.setRGB(x, y, c.getRGB());
+                }
+                if(boxEyeOpenness.isSelected()){
+                    if(brightness>sliderOpenThresholdMin.getValue()&&brightness<sliderOpenThresholdMax.getValue()){
+                        c = Color.orange;
+                        if(brightness>minThreshold&&brightness<maxThreshold)c = redorange;
+                        ocount++;
+                        im.setRGB(x, y, c.getRGB());
+                    }
                 }
             }
         }
@@ -456,6 +484,13 @@ public class Main extends javax.swing.JFrame{
             lOpen = count>0;
         }else{
             rOpen = count>0;
+        }
+        if(boxEyeOpenness.isSelected()){
+            if(eyeIndex==0){
+                lo = ocount;
+            }else{
+                ro = ocount;
+            }
         }
         synchronized(eyeOpen){
             if(count>0)eyeOpen.add(System.nanoTime());
@@ -543,8 +578,17 @@ public class Main extends javax.swing.JFrame{
         int dy = eyeIndex==0?ldy:rdy;
         int cx = eyeIndex==0?lcx:rcx;
         int cy = eyeIndex==0?lcy:rcy;
+        int lo = eyeIndex==0?llo:rlo;
+        int ro = eyeIndex==0?lro:rro;
+        int uo = eyeIndex==0?luo:ruo;
+        int dO = eyeIndex==0?ldo:rdo;//because I can't do do
+        int co = eyeIndex==0?lco:rco;
+        int oo = eyeIndex==0?loo:roo;
         int x = eyeIndex==0?Main.lx:Main.rx;
         int y = eyeIndex==0?Main.ly:Main.ry;
+        int ocount = eyeIndex==0?Main.lo:Main.ro;
+        float lob = (eyeIndex==0?sliderBufferLeftClosed.getValue():sliderBufferRightClosed.getValue())/100f;
+        float uob = (eyeIndex==0?sliderBufferLeftOpen.getValue():sliderBufferRightOpen.getValue())/100f;
         float lDist = dist(lx,ly,x,y);
         float cDist = dist(cx,cy,x,y);
         float rDist = dist(rx,ry,x,y);
@@ -556,13 +600,52 @@ public class Main extends javax.swing.JFrame{
         float dnDist = dist(dx,dy,cx,cy);
         float xo = calc(lDist,cDist,rDist,lfDist,rgDist);
         float yo = calc(dDist,cDist,uDist,dnDist,upDist);
+        float o = buffer(lob, uob, getValueBetweenTwoValues(oo, 0, pluslerp(lo, ro, uo, dO, co, xo, yo), 1, ocount));
         if(eyeIndex==0){
-            lxOut = xo;
-            lyOut = yo;
+            if(!(boxInvertBlink.isSelected()?lOpen:!lOpen))o=0;
+            lxOut = lerp(xo, lxOut, sliderSmoothPos.getValue()/1000f);
+            lyOut = lerp(yo, lyOut, sliderSmoothPos.getValue()/1000f);
+            if(boxEyeOpenness.isSelected())loOut = lerp(o, loOut, sliderSmoothOpen.getValue()/1000f);
+            else loOut = 1;
         }else{
-            rxOut = xo;
-            ryOut = yo;
+            if(!(boxInvertBlink.isSelected()?rOpen:!rOpen))o=0;
+            rxOut = lerp(xo, rxOut, sliderSmoothPos.getValue()/1000f);
+            ryOut = lerp(yo, ryOut, sliderSmoothPos.getValue()/1000f);
+            if(boxEyeOpenness.isSelected())roOut = lerp(o, roOut, sliderSmoothOpen.getValue()/1000f);
+            else roOut = 1;
         }
+    }
+    public static float buffer(float lb, float ub, float val){
+        float adj = (val-lb)*(1/(1-(lb+ub)));//adjusted value 0 - 1
+        return Math.max(0, Math.min(1, adj));//clamp
+    }
+    public static float pluslerp(int l, int r, int u, int d, int c, float x, float y){
+        float ox = bilerp(l, c, r, x);
+        float oy = bilerp(d, c, u, y);
+        float X = x/y;
+        float Y = y/x;
+        if(Float.isNaN(X))X = 1;
+        if(Float.isNaN(Y))Y = 1;
+        float a = X+Y;
+        float xw = X/a;
+        float yw = Y/a;
+        return ox*xw+oy*yw;
+    }
+    public static float lerp(float p1, float p2, float v){
+        return getValueBetweenTwoValues(0, p1, 1, p2, v);
+    }
+    public static float bilerp(float p1, float p2, float p3, float v){
+        if(v<0)getValueBetweenTwoValues(0, p1, 1, p2, v+1);
+        return getValueBetweenTwoValues(0, p2, 1, p3, v);
+    }
+    public static float getValueBetweenTwoValues(float pos1, float val1, float pos2, float val2, float pos){
+        if(pos1>pos2){
+            return getValueBetweenTwoValues(pos2, val2, pos1, val1, pos);
+        }
+        float posDiff = pos2-pos1;
+        float percent = pos/posDiff;
+        float valDiff = val2-val1;
+        return percent*valDiff+val1;
     }
     private static float r(float f){
         return Math.round(f*100)/100f;
@@ -611,6 +694,7 @@ public class Main extends javax.swing.JFrame{
             }
         };
         labelStatusRight = new javax.swing.JLabel();
+        jScrollPane1 = new javax.swing.JScrollPane();
         panelControls = new javax.swing.JPanel();
         jLabel1 = new javax.swing.JLabel();
         panelControlsInput = new javax.swing.JPanel();
@@ -679,6 +763,13 @@ public class Main extends javax.swing.JFrame{
         buttonCalibrateRightEye = new javax.swing.JButton();
         buttonCalibrateAll = new javax.swing.JButton();
         boxInvertBlink = new javax.swing.JCheckBox();
+        jPanel12 = new javax.swing.JPanel();
+        boxEyeOpenness = new javax.swing.JCheckBox();
+        jPanel13 = new javax.swing.JPanel();
+        jLabel29 = new javax.swing.JLabel();
+        jLabel30 = new javax.swing.JLabel();
+        sliderOpenThresholdMin = new javax.swing.JSlider();
+        sliderOpenThresholdMax = new javax.swing.JSlider();
         panelControlsStability = new javax.swing.JPanel();
         jLabel28 = new javax.swing.JLabel();
         boxCombineLook = new javax.swing.JCheckBox();
@@ -688,6 +779,25 @@ public class Main extends javax.swing.JFrame{
         sliderEyeLockThreshold = new javax.swing.JSlider();
         boxAutoShutdown = new javax.swing.JCheckBox();
         spinnerAutoShutdown = new javax.swing.JSpinner();
+        jLabel25 = new javax.swing.JLabel();
+        spinnerReconnectTimeout = new javax.swing.JSpinner();
+        jPanel14 = new javax.swing.JPanel();
+        jPanel15 = new javax.swing.JPanel();
+        jLabel33 = new javax.swing.JLabel();
+        jLabel35 = new javax.swing.JLabel();
+        sliderBufferLeftOpen = new javax.swing.JSlider();
+        sliderBufferLeftClosed = new javax.swing.JSlider();
+        jPanel16 = new javax.swing.JPanel();
+        jLabel34 = new javax.swing.JLabel();
+        jLabel36 = new javax.swing.JLabel();
+        sliderBufferRightOpen = new javax.swing.JSlider();
+        sliderBufferRightClosed = new javax.swing.JSlider();
+        jLabel37 = new javax.swing.JLabel();
+        jPanel17 = new javax.swing.JPanel();
+        jLabel39 = new javax.swing.JLabel();
+        jLabel40 = new javax.swing.JLabel();
+        sliderSmoothPos = new javax.swing.JSlider();
+        sliderSmoothOpen = new javax.swing.JSlider();
         panelControlsOSC = new javax.swing.JPanel();
         jPanel11 = new javax.swing.JPanel();
         jLabel18 = new javax.swing.JLabel();
@@ -702,13 +812,17 @@ public class Main extends javax.swing.JFrame{
         jLabel23 = new javax.swing.JLabel();
         boxLeftEyeBlink = new javax.swing.JTextField();
         boxRightEyeBlink = new javax.swing.JTextField();
+        jLabel31 = new javax.swing.JLabel();
+        jLabel32 = new javax.swing.JLabel();
+        boxLeftEyeOpenness = new javax.swing.JTextField();
+        boxRightEyeOpenness = new javax.swing.JTextField();
         jLabel24 = new javax.swing.JLabel();
         panelSaveLoad = new javax.swing.JPanel();
         buttonSave = new javax.swing.JButton();
         buttonLoad = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("Bad Eye Tracking 1.0.0");
+        setTitle("Bad Eye Tracking");
 
         panelInputs.setLayout(new javax.swing.BoxLayout(panelInputs, javax.swing.BoxLayout.PAGE_AXIS));
 
@@ -758,7 +872,7 @@ public class Main extends javax.swing.JFrame{
         );
         panelStatusLightLeftLayout.setVerticalGroup(
             panelStatusLightLeftLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 305, Short.MAX_VALUE)
+            .addGap(0, 266, Short.MAX_VALUE)
         );
 
         panelInputStatusLeft.add(panelStatusLightLeft, java.awt.BorderLayout.CENTER);
@@ -780,7 +894,7 @@ public class Main extends javax.swing.JFrame{
         );
         panelStatusLightRightLayout.setVerticalGroup(
             panelStatusLightRightLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 305, Short.MAX_VALUE)
+            .addGap(0, 266, Short.MAX_VALUE)
         );
 
         panelInputStatusRight.add(panelStatusLightRight, java.awt.BorderLayout.CENTER);
@@ -793,6 +907,9 @@ public class Main extends javax.swing.JFrame{
         panelInputStatus.add(panelInputStatusDual, java.awt.BorderLayout.CENTER);
 
         panelInputs.add(panelInputStatus);
+
+        jScrollPane1.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        jScrollPane1.setVerticalScrollBarPolicy(javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 
         panelControls.setLayout(new javax.swing.BoxLayout(panelControls, javax.swing.BoxLayout.PAGE_AXIS));
 
@@ -941,7 +1058,7 @@ public class Main extends javax.swing.JFrame{
                         .addGroup(panelControlsCroppingLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                             .addComponent(jPanel9, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(jPanel7, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 8, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 128, Short.MAX_VALUE)
                         .addGroup(panelControlsCroppingLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addComponent(jPanel8, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(jPanel10, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
@@ -996,7 +1113,7 @@ public class Main extends javax.swing.JFrame{
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(spinnerRadius, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(boxAntiFlicker, javax.swing.GroupLayout.DEFAULT_SIZE, 182, Short.MAX_VALUE))
+                        .addComponent(boxAntiFlicker, javax.swing.GroupLayout.DEFAULT_SIZE, 302, Short.MAX_VALUE))
                     .addComponent(buttonResetFocalPoints, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
@@ -1209,6 +1326,31 @@ public class Main extends javax.swing.JFrame{
 
         boxInvertBlink.setText("Invert Blink");
 
+        jPanel12.setLayout(new java.awt.BorderLayout());
+
+        boxEyeOpenness.setText("Use Eye Openness");
+        jPanel12.add(boxEyeOpenness, java.awt.BorderLayout.NORTH);
+
+        jPanel13.setLayout(new java.awt.GridLayout(0, 2));
+
+        jLabel29.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel29.setText("Lower Threshold");
+        jPanel13.add(jLabel29);
+
+        jLabel30.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel30.setText("Upper Threshold");
+        jPanel13.add(jLabel30);
+
+        sliderOpenThresholdMin.setMaximum(765);
+        sliderOpenThresholdMin.setValue(0);
+        jPanel13.add(sliderOpenThresholdMin);
+
+        sliderOpenThresholdMax.setMaximum(765);
+        sliderOpenThresholdMax.setValue(500);
+        jPanel13.add(sliderOpenThresholdMax);
+
+        jPanel12.add(jPanel13, java.awt.BorderLayout.CENTER);
+
         javax.swing.GroupLayout panelControlsCalibrationLayout = new javax.swing.GroupLayout(panelControlsCalibration);
         panelControlsCalibration.setLayout(panelControlsCalibrationLayout);
         panelControlsCalibrationLayout.setHorizontalGroup(
@@ -1216,14 +1358,15 @@ public class Main extends javax.swing.JFrame{
             .addGroup(panelControlsCalibrationLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(panelControlsCalibrationLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jPanel12, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(buttonCalibrateAll, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addGroup(panelControlsCalibrationLayout.createSequentialGroup()
-                        .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 22, Short.MAX_VALUE)
-                        .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(jPanel1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jLabel5, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(boxInvertBlink, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(boxInvertBlink, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addGroup(panelControlsCalibrationLayout.createSequentialGroup()
+                        .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap())
         );
         panelControlsCalibrationLayout.setVerticalGroup(
@@ -1234,12 +1377,14 @@ public class Main extends javax.swing.JFrame{
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jPanel12, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(panelControlsCalibrationLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jPanel2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jPanel4, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(buttonCalibrateAll)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(boxInvertBlink)
                 .addContainerGap())
         );
@@ -1282,6 +1427,71 @@ public class Main extends javax.swing.JFrame{
         spinnerAutoShutdown.setModel(new javax.swing.SpinnerNumberModel(10, 1, null, 1));
         spinnerAutoShutdown.setToolTipText("<html>Automatically closes BadEyeTracking after the specified time, in minutes.<br> Sometimes the program frezzes up, I'm not sure why.<br> This is designed to be used with an auto restart script to keep it running.");
 
+        jLabel25.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel25.setText("Reconnect timeout (ms)");
+
+        spinnerReconnectTimeout.setModel(new javax.swing.SpinnerNumberModel(1000, 1, null, 1));
+        spinnerReconnectTimeout.setToolTipText("Automatically reconnects after recieving no frames from the camera for an amount of time.");
+
+        jPanel14.setLayout(new java.awt.GridLayout());
+
+        jPanel15.setLayout(new java.awt.GridLayout(0, 2));
+
+        jLabel33.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel33.setText("Left open");
+        jPanel15.add(jLabel33);
+
+        jLabel35.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel35.setText("Left closed");
+        jPanel15.add(jLabel35);
+
+        sliderBufferLeftOpen.setValue(15);
+        jPanel15.add(sliderBufferLeftOpen);
+
+        sliderBufferLeftClosed.setValue(15);
+        jPanel15.add(sliderBufferLeftClosed);
+
+        jPanel14.add(jPanel15);
+
+        jPanel16.setLayout(new java.awt.GridLayout(0, 2));
+
+        jLabel34.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel34.setText("Right open");
+        jPanel16.add(jLabel34);
+
+        jLabel36.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel36.setText("Right closed");
+        jPanel16.add(jLabel36);
+
+        sliderBufferRightOpen.setValue(15);
+        jPanel16.add(sliderBufferRightOpen);
+
+        sliderBufferRightClosed.setValue(15);
+        jPanel16.add(sliderBufferRightClosed);
+
+        jPanel14.add(jPanel16);
+
+        jLabel37.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel37.setText("Eye openness buffers");
+
+        jPanel17.setLayout(new java.awt.GridLayout(0, 2));
+
+        jLabel39.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel39.setText("Eye pos smoothing");
+        jPanel17.add(jLabel39);
+
+        jLabel40.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel40.setText("Eye openness smoothing");
+        jPanel17.add(jLabel40);
+
+        sliderSmoothPos.setMaximum(1000);
+        sliderSmoothPos.setValue(150);
+        jPanel17.add(sliderSmoothPos);
+
+        sliderSmoothOpen.setMaximum(1000);
+        sliderSmoothOpen.setValue(250);
+        jPanel17.add(sliderSmoothOpen);
+
         javax.swing.GroupLayout panelControlsStabilityLayout = new javax.swing.GroupLayout(panelControlsStability);
         panelControlsStability.setLayout(panelControlsStabilityLayout);
         panelControlsStabilityLayout.setHorizontalGroup(
@@ -1289,18 +1499,23 @@ public class Main extends javax.swing.JFrame{
             .addGroup(panelControlsStabilityLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(panelControlsStabilityLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel37, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jPanel14, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
                     .addComponent(jLabel28, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(boxCombineLook, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(panelControlsStabilityLayout.createSequentialGroup()
-                        .addGroup(panelControlsStabilityLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(boxAutoShutdown, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(jLabel17, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(sliderBlinkThreshold, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
-                        .addGap(18, 18, 18)
+                        .addGroup(panelControlsStabilityLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                            .addComponent(jLabel25, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(boxAutoShutdown, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jLabel17, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(sliderBlinkThreshold, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(panelControlsStabilityLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(spinnerAutoShutdown)
-                            .addComponent(sliderEyeLockThreshold, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
-                            .addComponent(labelEyeLock, javax.swing.GroupLayout.DEFAULT_SIZE, 137, Short.MAX_VALUE))))
+                            .addComponent(sliderEyeLockThreshold, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(labelEyeLock, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(spinnerReconnectTimeout, javax.swing.GroupLayout.Alignment.TRAILING)))
+                    .addComponent(jPanel17, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
         panelControlsStabilityLayout.setVerticalGroup(
@@ -1322,12 +1537,22 @@ public class Main extends javax.swing.JFrame{
                 .addGroup(panelControlsStabilityLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(boxAutoShutdown)
                     .addComponent(spinnerAutoShutdown, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(panelControlsStabilityLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(spinnerReconnectTimeout)
+                    .addComponent(jLabel25, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jLabel37)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jPanel14, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jPanel17, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         panelControls.add(panelControlsStability);
 
-        jPanel11.setLayout(new java.awt.GridLayout(6, 2));
+        jPanel11.setLayout(new java.awt.GridLayout(0, 2));
 
         jLabel18.setText("Left Eye X");
         jPanel11.add(jLabel18);
@@ -1365,6 +1590,18 @@ public class Main extends javax.swing.JFrame{
         boxRightEyeBlink.setText("RightEyeBlink");
         jPanel11.add(boxRightEyeBlink);
 
+        jLabel31.setText("Left Eye Openness");
+        jPanel11.add(jLabel31);
+
+        jLabel32.setText("Right Eye Openness");
+        jPanel11.add(jLabel32);
+
+        boxLeftEyeOpenness.setText("LeftEyeOpenness");
+        jPanel11.add(boxLeftEyeOpenness);
+
+        boxRightEyeOpenness.setText("RightEyeOpenness");
+        jPanel11.add(boxRightEyeOpenness);
+
         jLabel24.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel24.setText("OSC SETTINGS");
 
@@ -1375,7 +1612,7 @@ public class Main extends javax.swing.JFrame{
             .addGroup(panelControlsOSCLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(panelControlsOSCLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jPanel11, javax.swing.GroupLayout.DEFAULT_SIZE, 280, Short.MAX_VALUE)
+                    .addComponent(jPanel11, javax.swing.GroupLayout.DEFAULT_SIZE, 400, Short.MAX_VALUE)
                     .addComponent(jLabel24, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
@@ -1428,24 +1665,26 @@ public class Main extends javax.swing.JFrame{
 
         panelControls.add(panelSaveLoad);
 
+        jScrollPane1.setViewportView(panelControls);
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(panelInputs, javax.swing.GroupLayout.DEFAULT_SIZE, 393, Short.MAX_VALUE)
-                .addGap(110, 110, 110)
-                .addComponent(panelControls, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(panelInputs, javax.swing.GroupLayout.DEFAULT_SIZE, 435, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+            .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(panelInputs, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(panelControls, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(panelInputs, javax.swing.GroupLayout.DEFAULT_SIZE, 828, Short.MAX_VALUE)
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
                 .addContainerGap())
         );
 
@@ -1465,30 +1704,44 @@ public class Main extends javax.swing.JFrame{
                 luy = ly;
                 rux = rx;
                 ruy = ry;
+                luo = lo;
+                ruo = ro;
             });
             calibrateBoth("down", () -> {
                 ldx = lx;
                 ldy = ly;
                 rdx = rx;
                 rdy = ry;
+                ldo = lo;
+                rdo = ro;
             });
             calibrateBoth("left", () -> {
                 llx = lx;
                 lly = ly;
                 rlx = rx;
                 rly = ry;
+                llo = lo;
+                rlo = ro;
             });
             calibrateBoth("right", () -> {
                 lrx = lx;
                 lry = ly;
                 rrx = rx;
                 rry = ry;
+                lro = lo;
+                rro = ro;
             });
             calibrateBoth("center", () -> {
                 lcx = lx;
                 lcy = ly;
                 rcx = rx;
                 rcy = ry;
+                lco = lo;
+                rco = ro;
+            });
+            calibrateBoth("closed", () -> {
+                loo=lo;
+                roo=ro;
             });
             for(JButton b : calibrateButtons)b.setEnabled(true);
         }).start();
@@ -1499,6 +1752,7 @@ public class Main extends javax.swing.JFrame{
             calibrateLeft("up", () -> {
                 lux = lx;
                 luy = ly;
+                luo=lo;
             });
             for(JButton b : calibrateButtons)b.setEnabled(true);
         }).start();
@@ -1509,6 +1763,7 @@ public class Main extends javax.swing.JFrame{
             calibrateLeft("left", () -> {
                 llx = lx;
                 lly = ly;
+                llo=lo;
             });
             for(JButton b : calibrateButtons)b.setEnabled(true);
         }).start();
@@ -1519,6 +1774,10 @@ public class Main extends javax.swing.JFrame{
             calibrateLeft("center", () -> {
                 lcx = lx;
                 lcy = ly;
+                lco=lo;
+            });
+            calibrateLeft("closed", () -> {
+                loo=lo;
             });
             for(JButton b : calibrateButtons)b.setEnabled(true);
         }).start();
@@ -1529,6 +1788,7 @@ public class Main extends javax.swing.JFrame{
             calibrateLeft("right", () -> {
                 lrx = lx;
                 lry = ly;
+                lro=lo;
             });
             for(JButton b : calibrateButtons)b.setEnabled(true);
         }).start();
@@ -1539,6 +1799,7 @@ public class Main extends javax.swing.JFrame{
             calibrateLeft("down", () -> {
                 ldx = lx;
                 ldy = ly;
+                ldo=lo;
             });
             for(JButton b : calibrateButtons)b.setEnabled(true);
         }).start();
@@ -1549,6 +1810,7 @@ public class Main extends javax.swing.JFrame{
             calibrateRight("up", () -> {
                 rux = rx;
                 ruy = ry;
+                ruo=ro;
             });
             for(JButton b : calibrateButtons)b.setEnabled(true);
         }).start();
@@ -1559,6 +1821,7 @@ public class Main extends javax.swing.JFrame{
             calibrateRight("left", () -> {
                 rlx = rx;
                 rly = ry;
+                rlo=ro;
             });
             for(JButton b : calibrateButtons)b.setEnabled(true);
         }).start();
@@ -1569,6 +1832,10 @@ public class Main extends javax.swing.JFrame{
             calibrateRight("center", () -> {
                 rcx = rx;
                 rcy = ry;
+                rco=ro;
+            });
+            calibrateRight("closed", () -> {
+                roo=ro;
             });
             for(JButton b : calibrateButtons)b.setEnabled(true);
         }).start();
@@ -1579,6 +1846,7 @@ public class Main extends javax.swing.JFrame{
             calibrateRight("right", () -> {
                 rrx = rx;
                 rry = ry;
+                rro=ro;
             });
             for(JButton b : calibrateButtons)b.setEnabled(true);
         }).start();
@@ -1589,6 +1857,7 @@ public class Main extends javax.swing.JFrame{
             calibrateRight("down", () -> {
                 rdx = rx;
                 rdy = ry;
+                rdo=ro;
             });
             for(JButton b : calibrateButtons)b.setEnabled(true);
         }).start();
@@ -1602,33 +1871,39 @@ public class Main extends javax.swing.JFrame{
     private void sliderThresholdMinStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_sliderThresholdMinStateChanged
         minThreshold = sliderThresholdMin.getValue();
     }//GEN-LAST:event_sliderThresholdMinStateChanged
-
     private void sliderThresholdMaxStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_sliderThresholdMaxStateChanged
         maxThreshold = sliderThresholdMax.getValue();
     }//GEN-LAST:event_sliderThresholdMaxStateChanged
-
     private void buttonCalibrateLeftEyeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonCalibrateLeftEyeActionPerformed
         new Thread(() -> {
             for(JButton b : calibrateButtons)b.setEnabled(false);
             calibrateLeft("up", () -> {
                 lux = lx;
                 luy = ly;
+                luo=lo;
             });
             calibrateLeft("down", () -> {
                 ldx = lx;
                 ldy = ly;
+                ldo=lo;
             });
             calibrateLeft("left", () -> {
                 llx = lx;
                 lly = ly;
+                llo=lo;
             });
             calibrateLeft("right", () -> {
                 lrx = lx;
                 lry = ly;
+                lro=lo;
             });
             calibrateLeft("center", () -> {
                 lcx = lx;
                 lcy = ly;
+                lco=lo;
+            });
+            calibrateLeft("closed", () -> {
+                loo=lo;
             });
             for(JButton b : calibrateButtons)b.setEnabled(true);
         }).start();
@@ -1639,22 +1914,30 @@ public class Main extends javax.swing.JFrame{
             calibrateRight("up", () -> {
                 rux = rx;
                 ruy = ry;
+                ruo=ro;
             });
             calibrateRight("down", () -> {
                 rdx = rx;
                 rdy = ry;
+                rdo=ro;
             });
             calibrateRight("left", () -> {
                 rlx = rx;
                 rly = ry;
+                rlo=ro;
             });
             calibrateRight("right", () -> {
                 rrx = rx;
                 rry = ry;
+                rro=ro;
             });
             calibrateRight("center", () -> {
                 rcx = rx;
                 rcy = ry;
+                rco=ro;
+            });
+            calibrateRight("closed", () -> {
+                roo=ro;
             });
             for(JButton b : calibrateButtons)b.setEnabled(true);
         }).start();
@@ -1673,11 +1956,9 @@ public class Main extends javax.swing.JFrame{
             rfp2x = right.getWidth()*3/4;
         }
     }//GEN-LAST:event_buttonResetFocalPointsActionPerformed
-
     private void sliderEyeLockThresholdStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_sliderEyeLockThresholdStateChanged
         labelEyeLock.setText("Eye Lock Time: "+sliderEyeLockThreshold.getValue()/10/100d+"s");
     }//GEN-LAST:event_sliderEyeLockThresholdStateChanged
-
     private void boxAutoShutdownActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_boxAutoShutdownActionPerformed
         resetAutoShutdown();
     }//GEN-LAST:event_boxAutoShutdownActionPerformed
@@ -1777,13 +2058,16 @@ public class Main extends javax.swing.JFrame{
     private javax.swing.JCheckBox boxAntiFlicker;
     private javax.swing.JCheckBox boxAutoShutdown;
     private javax.swing.JCheckBox boxCombineLook;
+    private javax.swing.JCheckBox boxEyeOpenness;
     private javax.swing.JCheckBox boxInvertBlink;
     private javax.swing.JTextField boxLeftEyeBlink;
+    private javax.swing.JTextField boxLeftEyeOpenness;
     private javax.swing.JTextField boxLeftEyeX;
     private javax.swing.JTextField boxLeftEyeY;
     private javax.swing.JCheckBox boxLeftFlipX;
     private javax.swing.JCheckBox boxLeftFlipY;
     private javax.swing.JTextField boxRightEyeBlink;
+    private javax.swing.JTextField boxRightEyeOpenness;
     private javax.swing.JTextField boxRightEyeX;
     private javax.swing.JTextField boxRightEyeY;
     private javax.swing.JCheckBox boxRightFlipX;
@@ -1823,11 +2107,23 @@ public class Main extends javax.swing.JFrame{
     private javax.swing.JLabel jLabel22;
     private javax.swing.JLabel jLabel23;
     private javax.swing.JLabel jLabel24;
+    private javax.swing.JLabel jLabel25;
     private javax.swing.JLabel jLabel26;
     private javax.swing.JLabel jLabel27;
     private javax.swing.JLabel jLabel28;
+    private javax.swing.JLabel jLabel29;
     private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel30;
+    private javax.swing.JLabel jLabel31;
+    private javax.swing.JLabel jLabel32;
+    private javax.swing.JLabel jLabel33;
+    private javax.swing.JLabel jLabel34;
+    private javax.swing.JLabel jLabel35;
+    private javax.swing.JLabel jLabel36;
+    private javax.swing.JLabel jLabel37;
+    private javax.swing.JLabel jLabel39;
     private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel40;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
@@ -1836,6 +2132,12 @@ public class Main extends javax.swing.JFrame{
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel10;
     private javax.swing.JPanel jPanel11;
+    private javax.swing.JPanel jPanel12;
+    private javax.swing.JPanel jPanel13;
+    private javax.swing.JPanel jPanel14;
+    private javax.swing.JPanel jPanel15;
+    private javax.swing.JPanel jPanel16;
+    private javax.swing.JPanel jPanel17;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
@@ -1844,6 +2146,7 @@ public class Main extends javax.swing.JFrame{
     private javax.swing.JPanel jPanel7;
     private javax.swing.JPanel jPanel8;
     private javax.swing.JPanel jPanel9;
+    private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JLabel labelEyeLock;
     private javax.swing.JLabel labelInputRaw;
     private javax.swing.JLabel labelInputStatus;
@@ -1871,7 +2174,15 @@ public class Main extends javax.swing.JFrame{
     private javax.swing.JPanel panelStatusLightLeft;
     private javax.swing.JPanel panelStatusLightRight;
     private javax.swing.JSlider sliderBlinkThreshold;
+    private javax.swing.JSlider sliderBufferLeftClosed;
+    private javax.swing.JSlider sliderBufferLeftOpen;
+    private javax.swing.JSlider sliderBufferRightClosed;
+    private javax.swing.JSlider sliderBufferRightOpen;
     private javax.swing.JSlider sliderEyeLockThreshold;
+    private javax.swing.JSlider sliderOpenThresholdMax;
+    private javax.swing.JSlider sliderOpenThresholdMin;
+    private javax.swing.JSlider sliderSmoothOpen;
+    private javax.swing.JSlider sliderSmoothPos;
     private javax.swing.JSlider sliderThresholdMax;
     private javax.swing.JSlider sliderThresholdMin;
     private javax.swing.JSpinner spinnerAutoShutdown;
@@ -1884,6 +2195,7 @@ public class Main extends javax.swing.JFrame{
     private javax.swing.JSpinner spinnerCropRightRight;
     private javax.swing.JSpinner spinnerCropRightTop;
     private javax.swing.JSpinner spinnerRadius;
+    private javax.swing.JSpinner spinnerReconnectTimeout;
     private javax.swing.JTextField textFieldAddressLeft;
     private javax.swing.JTextField textFieldAddressRight;
     // End of variables declaration//GEN-END:variables
@@ -1907,7 +2219,11 @@ public class Main extends javax.swing.JFrame{
                             +"|"+stringify(sliderEyeLockThreshold.getValue())
                             +"|"+stringify(minThreshold,lfp1x,lfp1y,lfp2x,lfp2y,rfp1x,rfp1y,rfp2x,rfp2y)
                             +"|"+stringify(boxAntiFlicker.isSelected(), boxAutoShutdown.isSelected())
-                            +"|"+stringify((int)spinnerAutoShutdown.getValue())
+                            +"|"+stringify((int)spinnerAutoShutdown.getValue(), (int)spinnerReconnectTimeout.getValue(), sliderOpenThresholdMin.getValue(), sliderOpenThresholdMax.getValue())
+                            +"|"+stringify(boxEyeOpenness.isSelected())
+                            +"|"+boxLeftEyeOpenness.getText()
+                            +"|"+boxRightEyeOpenness.getText()
+                            +"|"+stringify(llo,luo,lro,ldo,lco,rlo,ruo,rro,rdo,rdo,loo,roo)
             );
         }catch(IOException ex){
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
@@ -1915,6 +2231,7 @@ public class Main extends javax.swing.JFrame{
     }
     private void load(){
         File file = new File("calibration.txt");
+        if(!file.exists())return;
         try(BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)))){
             String[] settings = reader.readLine().trim().split("\\|");
             String[] calibs = settings[0].split(" ");
@@ -1991,6 +2308,29 @@ public class Main extends javax.swing.JFrame{
             boxAutoShutdown.setSelected(Boolean.parseBoolean(flickerandshutdown[1]));
             String[] sixteen = settings[16].split(" ");
             spinnerAutoShutdown.setValue(Integer.parseInt(sixteen[0]));
+            spinnerReconnectTimeout.setValue(Integer.parseInt(sixteen[1]));
+            sliderOpenThresholdMin.setValue(Integer.parseInt(sixteen[2]));
+            sliderOpenThresholdMax.setValue(Integer.parseInt(sixteen[3]));
+            boxEyeOpenness.setSelected(Boolean.parseBoolean(settings[17]));
+            boxLeftEyeOpenness.setText(settings[18]);
+            boxRightEyeOpenness.setText(settings[19]);
+            String[] calibso = settings[20].split(" ");
+            int[] cbo = new int[calibso.length];
+            for(int i = 0; i<cbo.length; i++){
+                cbo[i] = Integer.parseInt(calibso[i]);
+            }
+            llo=cbo[0];
+            luo=cbo[1];
+            lro=cbo[2];
+            ldo=cbo[3];
+            lco=cbo[4];
+            rlo=cbo[5];
+            ruo=cbo[6];
+            rro=cbo[7];
+            rdo=cbo[8];
+            rco=cbo[9];
+            loo=cbo[10];
+            roo=cbo[11];
         }catch(Exception ex){
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
         }
