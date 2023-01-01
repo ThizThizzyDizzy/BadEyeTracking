@@ -21,8 +21,10 @@ import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -324,7 +326,9 @@ public class Main extends javax.swing.JFrame{
                 public void run() {
                     try {
                         is[0] = urlconnection.getInputStream();
-                    }catch (IOException localIOException){}
+                    }catch (IOException localIOException){
+                        System.err.println(localIOException.getMessage());
+                    }
                 }
             };
             t.setName("FileDownloadStreamThread");
@@ -612,6 +616,7 @@ public class Main extends javax.swing.JFrame{
         };
         labelStatusRight = new javax.swing.JLabel();
         panelControls = new javax.swing.JPanel();
+        panelControlsLeft = new javax.swing.JPanel();
         jLabel1 = new javax.swing.JLabel();
         panelControlsInput = new javax.swing.JPanel();
         jLabel2 = new javax.swing.JLabel();
@@ -626,6 +631,7 @@ public class Main extends javax.swing.JFrame{
         buttonReconnectRight = new javax.swing.JButton();
         panelControlsCropping = new javax.swing.JPanel();
         jLabel8 = new javax.swing.JLabel();
+        panelCroppingMain = new javax.swing.JPanel();
         jPanel7 = new javax.swing.JPanel();
         jLabel9 = new javax.swing.JLabel();
         jLabel10 = new javax.swing.JLabel();
@@ -652,10 +658,19 @@ public class Main extends javax.swing.JFrame{
         boxRightFlipY = new javax.swing.JCheckBox();
         panelControlsEyeCropping = new javax.swing.JPanel();
         jLabel26 = new javax.swing.JLabel();
+        jPanel12 = new javax.swing.JPanel();
         jLabel27 = new javax.swing.JLabel();
         spinnerRadius = new javax.swing.JSpinner();
-        buttonResetFocalPoints = new javax.swing.JButton();
         boxAntiFlicker = new javax.swing.JCheckBox();
+        buttonResetFocalPoints = new javax.swing.JButton();
+        panelInputScanner = new javax.swing.JPanel();
+        jLabel25 = new javax.swing.JLabel();
+        buttonScanInputs = new javax.swing.JButton();
+        panelOutput = new javax.swing.JPanel();
+        jLabel29 = new javax.swing.JLabel();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        textAreaOutput = new javax.swing.JTextArea();
+        panelControlsRight = new javax.swing.JPanel();
         panelControlsCalibration = new javax.swing.JPanel();
         jLabel5 = new javax.swing.JLabel();
         jPanel1 = new javax.swing.JPanel();
@@ -758,7 +773,7 @@ public class Main extends javax.swing.JFrame{
         );
         panelStatusLightLeftLayout.setVerticalGroup(
             panelStatusLightLeftLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 305, Short.MAX_VALUE)
+            .addGap(0, 190, Short.MAX_VALUE)
         );
 
         panelInputStatusLeft.add(panelStatusLightLeft, java.awt.BorderLayout.CENTER);
@@ -780,7 +795,7 @@ public class Main extends javax.swing.JFrame{
         );
         panelStatusLightRightLayout.setVerticalGroup(
             panelStatusLightRightLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 305, Short.MAX_VALUE)
+            .addGap(0, 190, Short.MAX_VALUE)
         );
 
         panelInputStatusRight.add(panelStatusLightRight, java.awt.BorderLayout.CENTER);
@@ -794,17 +809,19 @@ public class Main extends javax.swing.JFrame{
 
         panelInputs.add(panelInputStatus);
 
-        panelControls.setLayout(new javax.swing.BoxLayout(panelControls, javax.swing.BoxLayout.PAGE_AXIS));
+        panelControls.setLayout(new java.awt.GridLayout());
+
+        panelControlsLeft.setLayout(new javax.swing.BoxLayout(panelControlsLeft, javax.swing.BoxLayout.PAGE_AXIS));
 
         jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel1.setText("CONTROLS");
-        panelControls.add(jLabel1);
+        panelControlsLeft.add(jLabel1);
 
-        panelControlsInput.setLayout(new java.awt.BorderLayout());
+        panelControlsInput.setLayout(new javax.swing.BoxLayout(panelControlsInput, javax.swing.BoxLayout.PAGE_AXIS));
 
         jLabel2.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel2.setText("INPUT");
-        panelControlsInput.add(jLabel2, java.awt.BorderLayout.NORTH);
+        panelControlsInput.add(jLabel2);
 
         jPanel3.setLayout(new java.awt.GridLayout(1, 0));
 
@@ -846,12 +863,17 @@ public class Main extends javax.swing.JFrame{
 
         jPanel3.add(jPanel6);
 
-        panelControlsInput.add(jPanel3, java.awt.BorderLayout.CENTER);
+        panelControlsInput.add(jPanel3);
 
-        panelControls.add(panelControlsInput);
+        panelControlsLeft.add(panelControlsInput);
+
+        panelControlsCropping.setLayout(new javax.swing.BoxLayout(panelControlsCropping, javax.swing.BoxLayout.PAGE_AXIS));
 
         jLabel8.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel8.setText("Image Cropping");
+        panelControlsCropping.add(jLabel8);
+
+        panelCroppingMain.setLayout(new java.awt.GridLayout(2, 2));
 
         jPanel7.setLayout(new java.awt.GridLayout(2, 4));
 
@@ -883,6 +905,8 @@ public class Main extends javax.swing.JFrame{
         spinnerCropLeftBottom.setModel(new javax.swing.SpinnerNumberModel(0, 0, null, 1));
         jPanel7.add(spinnerCropLeftBottom);
 
+        panelCroppingMain.add(jPanel7);
+
         jPanel8.setLayout(new java.awt.GridLayout(2, 4));
 
         jLabel11.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
@@ -913,6 +937,8 @@ public class Main extends javax.swing.JFrame{
         spinnerCropRightBottom.setModel(new javax.swing.SpinnerNumberModel(0, 0, null, 1));
         jPanel8.add(spinnerCropRightBottom);
 
+        panelCroppingMain.add(jPanel8);
+
         jPanel9.setLayout(new java.awt.GridLayout(1, 0));
 
         boxLeftFlipX.setText("Flip X");
@@ -920,6 +946,8 @@ public class Main extends javax.swing.JFrame{
 
         boxLeftFlipY.setText("Flip Y");
         jPanel9.add(boxLeftFlipY);
+
+        panelCroppingMain.add(jPanel9);
 
         jPanel10.setLayout(new java.awt.GridLayout(1, 0));
 
@@ -929,49 +957,32 @@ public class Main extends javax.swing.JFrame{
         boxRightFlipY.setText("Flip Y");
         jPanel10.add(boxRightFlipY);
 
-        javax.swing.GroupLayout panelControlsCroppingLayout = new javax.swing.GroupLayout(panelControlsCropping);
-        panelControlsCropping.setLayout(panelControlsCroppingLayout);
-        panelControlsCroppingLayout.setHorizontalGroup(
-            panelControlsCroppingLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(panelControlsCroppingLayout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(panelControlsCroppingLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel8, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addGroup(panelControlsCroppingLayout.createSequentialGroup()
-                        .addGroup(panelControlsCroppingLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                            .addComponent(jPanel9, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(jPanel7, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 8, Short.MAX_VALUE)
-                        .addGroup(panelControlsCroppingLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(jPanel8, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(jPanel10, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
-                .addContainerGap())
-        );
-        panelControlsCroppingLayout.setVerticalGroup(
-            panelControlsCroppingLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(panelControlsCroppingLayout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jLabel8)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(panelControlsCroppingLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jPanel7, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jPanel8, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(panelControlsCroppingLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jPanel9, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jPanel10, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap())
-        );
+        panelCroppingMain.add(jPanel10);
 
-        panelControls.add(panelControlsCropping);
+        panelControlsCropping.add(panelCroppingMain);
+
+        panelControlsLeft.add(panelControlsCropping);
+
+        panelControlsEyeCropping.setLayout(new java.awt.GridLayout(0, 1));
 
         jLabel26.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel26.setText("TRACKING SETUP");
+        panelControlsEyeCropping.add(jLabel26);
+
+        jPanel12.setLayout(new javax.swing.BoxLayout(jPanel12, javax.swing.BoxLayout.LINE_AXIS));
 
         jLabel27.setText("Radius");
+        jPanel12.add(jLabel27);
 
         spinnerRadius.setModel(new javax.swing.SpinnerNumberModel(1, 1, null, 1));
         spinnerRadius.setValue(10);
+        jPanel12.add(spinnerRadius);
+
+        boxAntiFlicker.setText("Anti-Flicker");
+        boxAntiFlicker.setToolTipText("Ignores new frames that that differ greatly from the previous frame");
+        jPanel12.add(boxAntiFlicker);
+
+        panelControlsEyeCropping.add(jPanel12);
 
         buttonResetFocalPoints.setText("Reset Focal Points");
         buttonResetFocalPoints.addActionListener(new java.awt.event.ActionListener() {
@@ -979,43 +990,43 @@ public class Main extends javax.swing.JFrame{
                 buttonResetFocalPointsActionPerformed(evt);
             }
         });
+        panelControlsEyeCropping.add(buttonResetFocalPoints);
 
-        boxAntiFlicker.setText("Anti-Flicker");
-        boxAntiFlicker.setToolTipText("Ignores new frames that that differ greatly from the previous frame");
+        panelControlsLeft.add(panelControlsEyeCropping);
 
-        javax.swing.GroupLayout panelControlsEyeCroppingLayout = new javax.swing.GroupLayout(panelControlsEyeCropping);
-        panelControlsEyeCropping.setLayout(panelControlsEyeCroppingLayout);
-        panelControlsEyeCroppingLayout.setHorizontalGroup(
-            panelControlsEyeCroppingLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(panelControlsEyeCroppingLayout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(panelControlsEyeCroppingLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel26, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addGroup(panelControlsEyeCroppingLayout.createSequentialGroup()
-                        .addComponent(jLabel27)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(spinnerRadius, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(boxAntiFlicker, javax.swing.GroupLayout.DEFAULT_SIZE, 182, Short.MAX_VALUE))
-                    .addComponent(buttonResetFocalPoints, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addContainerGap())
-        );
-        panelControlsEyeCroppingLayout.setVerticalGroup(
-            panelControlsEyeCroppingLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(panelControlsEyeCroppingLayout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jLabel26)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(panelControlsEyeCroppingLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel27, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(spinnerRadius)
-                    .addComponent(boxAntiFlicker))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(buttonResetFocalPoints)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
+        panelInputScanner.setLayout(new java.awt.GridLayout(0, 1));
 
-        panelControls.add(panelControlsEyeCropping);
+        jLabel25.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel25.setText("INPUT SCANNER");
+        panelInputScanner.add(jLabel25);
+
+        buttonScanInputs.setText("Scan for Inputs");
+        buttonScanInputs.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                buttonScanInputsActionPerformed(evt);
+            }
+        });
+        panelInputScanner.add(buttonScanInputs);
+
+        panelControlsLeft.add(panelInputScanner);
+
+        panelOutput.setLayout(new java.awt.BorderLayout());
+
+        jLabel29.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel29.setText("STATUS/DEBUG");
+        panelOutput.add(jLabel29, java.awt.BorderLayout.NORTH);
+
+        textAreaOutput.setColumns(20);
+        textAreaOutput.setRows(5);
+        jScrollPane2.setViewportView(textAreaOutput);
+
+        panelOutput.add(jScrollPane2, java.awt.BorderLayout.CENTER);
+
+        panelControlsLeft.add(panelOutput);
+
+        panelControls.add(panelControlsLeft);
+
+        panelControlsRight.setLayout(new javax.swing.BoxLayout(panelControlsRight, javax.swing.BoxLayout.PAGE_AXIS));
 
         jLabel5.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel5.setText("CALIBRATION");
@@ -1219,9 +1230,9 @@ public class Main extends javax.swing.JFrame{
                     .addComponent(buttonCalibrateAll, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(panelControlsCalibrationLayout.createSequentialGroup()
                         .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 22, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(jPanel1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jPanel1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
                     .addComponent(jLabel5, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(boxInvertBlink, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
@@ -1244,7 +1255,7 @@ public class Main extends javax.swing.JFrame{
                 .addContainerGap())
         );
 
-        panelControls.add(panelControlsCalibration);
+        panelControlsRight.add(panelControlsCalibration);
 
         jLabel28.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel28.setText("STABILITY");
@@ -1300,7 +1311,7 @@ public class Main extends javax.swing.JFrame{
                         .addGroup(panelControlsStabilityLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(spinnerAutoShutdown)
                             .addComponent(sliderEyeLockThreshold, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
-                            .addComponent(labelEyeLock, javax.swing.GroupLayout.DEFAULT_SIZE, 137, Short.MAX_VALUE))))
+                            .addComponent(labelEyeLock, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
                 .addContainerGap())
         );
         panelControlsStabilityLayout.setVerticalGroup(
@@ -1325,7 +1336,7 @@ public class Main extends javax.swing.JFrame{
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        panelControls.add(panelControlsStability);
+        panelControlsRight.add(panelControlsStability);
 
         jPanel11.setLayout(new java.awt.GridLayout(6, 2));
 
@@ -1375,7 +1386,7 @@ public class Main extends javax.swing.JFrame{
             .addGroup(panelControlsOSCLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(panelControlsOSCLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jPanel11, javax.swing.GroupLayout.DEFAULT_SIZE, 280, Short.MAX_VALUE)
+                    .addComponent(jPanel11, javax.swing.GroupLayout.DEFAULT_SIZE, 288, Short.MAX_VALUE)
                     .addComponent(jLabel24, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
@@ -1389,7 +1400,7 @@ public class Main extends javax.swing.JFrame{
                 .addContainerGap())
         );
 
-        panelControls.add(panelControlsOSC);
+        panelControlsRight.add(panelControlsOSC);
 
         buttonSave.setText("Save Configuration");
         buttonSave.addActionListener(new java.awt.event.ActionListener() {
@@ -1426,7 +1437,9 @@ public class Main extends javax.swing.JFrame{
                 .addContainerGap())
         );
 
-        panelControls.add(panelSaveLoad);
+        panelControlsRight.add(panelSaveLoad);
+
+        panelControls.add(panelControlsRight);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -1434,9 +1447,9 @@ public class Main extends javax.swing.JFrame{
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(panelInputs, javax.swing.GroupLayout.DEFAULT_SIZE, 393, Short.MAX_VALUE)
-                .addGap(110, 110, 110)
-                .addComponent(panelControls, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(panelInputs, javax.swing.GroupLayout.DEFAULT_SIZE, 382, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(panelControls, javax.swing.GroupLayout.PREFERRED_SIZE, 600, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -1681,6 +1694,63 @@ public class Main extends javax.swing.JFrame{
     private void boxAutoShutdownActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_boxAutoShutdownActionPerformed
         resetAutoShutdown();
     }//GEN-LAST:event_boxAutoShutdownActionPerformed
+    private void buttonScanInputsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonScanInputsActionPerformed
+        HashSet<String> addresses = new HashSet<>();
+        String lef = textFieldAddressLeft.getText();
+        if(lef.matches("(https?://)?\\d+\\.\\d+\\.\\d+\\.\\d+(:\\d+)?")){
+            String[] splt = lef.split("\\.");
+            for(int i = 0; i<=255; i++){
+                addresses.add(splt[0]+"."+splt[1]+"."+splt[2]+"."+i+(splt[splt.length-1].contains(":")?":"+splt[splt.length-1].split(":")[1]:""));
+            }
+        }
+        String rig = textFieldAddressLeft.getText();
+        if(rig.matches("(https?://)?\\d+\\.\\d+\\.\\d+\\.\\d+(:\\d+)?")){
+            String[] splt = rig.split("\\.");
+            for(int i = 0; i<=255; i++){
+                addresses.add(splt[0]+"."+splt[1]+"."+splt[2]+"."+i+(splt[splt.length-1].contains(":")?":"+splt[splt.length-1].split(":")[1]:""));
+            }
+        }
+        scanForImageStreams(addresses.toArray(new String[addresses.size()]));
+    }//GEN-LAST:event_buttonScanInputsActionPerformed
+    private void scanForImageStreams(String[] addresses){
+        Thread scan = new Thread(()->{
+            println("Scanning "+addresses.length+" ip addresses...");
+            ArrayList<String> good = new ArrayList<>();
+            boolean[] done = new boolean[addresses.length];
+            for(int i = 0; i<addresses.length; i++){
+                int idx = i;
+                String ip = addresses[idx];
+                Thread t = new Thread(() -> {
+                    boolean[] isGood = {false};
+                    int[] tries = new int[1];
+                    try{
+                        startImageStream(ip, (im)->{
+                            isGood[0] = true;
+                            throw new RuntimeException();//stop the stream
+                        });
+                    }catch(Exception ex){
+                        if(ex.getMessage().equals("Unable to download null"))isGood[0] = true;
+                        if(isGood[0])println("Found "+ip+(ex.getMessage().equals("Unable to download null")?"?":"!"));
+                        done[idx] = true;
+                    }
+                    if(isGood[0])good.add(ip);
+                });
+                t.setDaemon(true);
+                t.start();
+            }
+            while(true){
+                boolean allDone = true;
+                for(boolean b : done){
+                    allDone &= b;
+                }
+                if(allDone)break;
+            }
+            println("Done! found "+good.size()+" things"+(good.isEmpty()?"":":"));
+            for(String s : good)println(s);
+        });
+        scan.setDaemon(true);
+        scan.start();
+    }
     private void calibrateLeft(String txt, Runnable calibrate){
         calibrate(txt, (t) -> {
             return lastLeftEye>t;
@@ -1806,6 +1876,7 @@ public class Main extends javax.swing.JFrame{
     private javax.swing.JButton buttonReconnectRight;
     private javax.swing.JButton buttonResetFocalPoints;
     private javax.swing.JButton buttonSave;
+    private javax.swing.JButton buttonScanInputs;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
@@ -1823,9 +1894,11 @@ public class Main extends javax.swing.JFrame{
     private javax.swing.JLabel jLabel22;
     private javax.swing.JLabel jLabel23;
     private javax.swing.JLabel jLabel24;
+    private javax.swing.JLabel jLabel25;
     private javax.swing.JLabel jLabel26;
     private javax.swing.JLabel jLabel27;
     private javax.swing.JLabel jLabel28;
+    private javax.swing.JLabel jLabel29;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
@@ -1836,6 +1909,7 @@ public class Main extends javax.swing.JFrame{
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel10;
     private javax.swing.JPanel jPanel11;
+    private javax.swing.JPanel jPanel12;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
@@ -1844,6 +1918,7 @@ public class Main extends javax.swing.JFrame{
     private javax.swing.JPanel jPanel7;
     private javax.swing.JPanel jPanel8;
     private javax.swing.JPanel jPanel9;
+    private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JLabel labelEyeLock;
     private javax.swing.JLabel labelInputRaw;
     private javax.swing.JLabel labelInputStatus;
@@ -1856,9 +1931,13 @@ public class Main extends javax.swing.JFrame{
     private javax.swing.JPanel panelControlsCropping;
     private javax.swing.JPanel panelControlsEyeCropping;
     private javax.swing.JPanel panelControlsInput;
+    private javax.swing.JPanel panelControlsLeft;
     private javax.swing.JPanel panelControlsOSC;
+    private javax.swing.JPanel panelControlsRight;
     private javax.swing.JPanel panelControlsStability;
+    private javax.swing.JPanel panelCroppingMain;
     private javax.swing.JPanel panelInputRaw;
+    private javax.swing.JPanel panelInputScanner;
     private javax.swing.JPanel panelInputStatus;
     private javax.swing.JPanel panelInputStatusDual;
     private javax.swing.JPanel panelInputStatusLeft;
@@ -1867,6 +1946,7 @@ public class Main extends javax.swing.JFrame{
     private javax.swing.JPanel panelInputs;
     private javax.swing.JPanel panelInputsRawDisplay;
     private javax.swing.JPanel panelInputsTrackedDisplay;
+    private javax.swing.JPanel panelOutput;
     private javax.swing.JPanel panelSaveLoad;
     private javax.swing.JPanel panelStatusLightLeft;
     private javax.swing.JPanel panelStatusLightRight;
@@ -1884,6 +1964,7 @@ public class Main extends javax.swing.JFrame{
     private javax.swing.JSpinner spinnerCropRightRight;
     private javax.swing.JSpinner spinnerCropRightTop;
     private javax.swing.JSpinner spinnerRadius;
+    private javax.swing.JTextArea textAreaOutput;
     private javax.swing.JTextField textFieldAddressLeft;
     private javax.swing.JTextField textFieldAddressRight;
     // End of variables declaration//GEN-END:variables
@@ -2069,6 +2150,10 @@ public class Main extends javax.swing.JFrame{
     long startupTime = System.nanoTime();
     private void resetAutoShutdown(){
         startupTime = System.nanoTime();
+    }
+    private synchronized void println(String string){
+        System.out.println(string);
+        textAreaOutput.setText(textAreaOutput.getText()+string+"\n");
     }
     private class SpecialMouseListener implements MouseListener, MouseMotionListener{
         private final JPanel panel;
