@@ -2799,6 +2799,7 @@ public class Main extends javax.swing.JFrame{
         g.drawLine(x, 0, x, panel.getHeight());
         g.drawLine(0, y, panel.getWidth(), y);
         if(boxEyeOpenness.isSelected()){
+            g.setColor(Color.lightGray);
             y = (int)(panel.getHeight()*(1-(eye==1?roOut:loOut)));
             g.drawLine(0, y, panel.getWidth(), y);
         }
