@@ -32,6 +32,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
 import javax.swing.JButton;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
@@ -373,7 +374,8 @@ public class Main extends javax.swing.JFrame{
         }
         return is[0];
     }
-    public static void startImageStream(String link, int eye, Consumer<BufferedImage> stream) throws Exception{
+    //total spaghetti monster, don't ask why
+    public static void startBadImageStream(String link, Consumer<BufferedImage> stream) throws Exception{
         URL url = new URL(link);
         URLConnection connection = url.openConnection();
         connection.setDefaultUseCaches(false);
@@ -410,7 +412,7 @@ public class Main extends javax.swing.JFrame{
                     for(int j = 0; j<len; j++){
                         bytes[j] = (byte)inputstream.read();
                     }
-                    File f = new File("out"+eye+".txt");
+                    File f = new File("out-scan.txt");
                     FileOutputStream fos = new FileOutputStream(f);
                     fos.write(bytes);
                     fos.close();
@@ -418,6 +420,39 @@ public class Main extends javax.swing.JFrame{
                     while(inputstream.read()!='\n');
                     while(inputstream.read()!='\n');
 //                    return;
+                }
+            }
+        }
+    }
+    public static void startImageStream(String link, int eye, Consumer<BufferedImage> stream) throws Exception{
+        URL url = new URL(link);
+        boolean downloadFile = true;
+        while (downloadFile) {
+            downloadFile = false;
+            try (InputStream inputstream=url.openStream()) {
+                while(true){
+                    while(inputstream.read()!='\n');
+                    while(inputstream.read()!='\n');
+                    while(inputstream.read()!='\n');
+                    while(inputstream.read()!=':');
+                    int i;
+                    String s = "";
+                    while((i = inputstream.read())!='\n'){
+                        s+=(char)i;
+                    }
+                    while(inputstream.read()!='\n');
+                    int len = Integer.parseInt(s.trim());
+                    inputstream.read();
+                    inputstream.read();
+                    byte[] bytes = new byte[len];
+                    for(int j = 0; j<len; j++){
+                        bytes[j] = (byte)inputstream.read();
+                    }
+                    File f = new File("out-"+eye+".txt");
+                    FileOutputStream fos = new FileOutputStream(f);
+                    fos.write(bytes);
+                    fos.close();
+                    stream.accept(ImageIO.read(f));
                 }
             }
         }
@@ -700,10 +735,10 @@ public class Main extends javax.swing.JFrame{
         labelStatusRight = new javax.swing.JLabel();
         jScrollPane1 = new javax.swing.JScrollPane();
         panelControls = new javax.swing.JPanel();
-        panelControlsLeft = new javax.swing.JPanel();
         jLabel1 = new javax.swing.JLabel();
         panelControlsInput = new javax.swing.JPanel();
         jLabel2 = new javax.swing.JLabel();
+        buttonScanInputs = new javax.swing.JButton();
         jPanel3 = new javax.swing.JPanel();
         jPanel5 = new javax.swing.JPanel();
         jLabel3 = new javax.swing.JLabel();
@@ -715,7 +750,6 @@ public class Main extends javax.swing.JFrame{
         buttonReconnectRight = new javax.swing.JButton();
         panelControlsCropping = new javax.swing.JPanel();
         jLabel8 = new javax.swing.JLabel();
-        panelCroppingMain = new javax.swing.JPanel();
         jPanel7 = new javax.swing.JPanel();
         jLabel9 = new javax.swing.JLabel();
         jLabel10 = new javax.swing.JLabel();
@@ -742,19 +776,10 @@ public class Main extends javax.swing.JFrame{
         boxRightFlipY = new javax.swing.JCheckBox();
         panelControlsEyeCropping = new javax.swing.JPanel();
         jLabel26 = new javax.swing.JLabel();
-        jPanel12 = new javax.swing.JPanel();
         jLabel27 = new javax.swing.JLabel();
         spinnerRadius = new javax.swing.JSpinner();
-        boxAntiFlicker = new javax.swing.JCheckBox();
         buttonResetFocalPoints = new javax.swing.JButton();
-        panelInputScanner = new javax.swing.JPanel();
-        jLabel25 = new javax.swing.JLabel();
-        buttonScanInputs = new javax.swing.JButton();
-        panelOutput = new javax.swing.JPanel();
-        jLabel29 = new javax.swing.JLabel();
-        jScrollPane2 = new javax.swing.JScrollPane();
-        textAreaOutput = new javax.swing.JTextArea();
-        panelControlsRight = new javax.swing.JPanel();
+        boxAntiFlicker = new javax.swing.JCheckBox();
         panelControlsCalibration = new javax.swing.JPanel();
         jLabel5 = new javax.swing.JLabel();
         jPanel1 = new javax.swing.JPanel();
@@ -930,13 +955,21 @@ public class Main extends javax.swing.JFrame{
 
         jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel1.setText("CONTROLS");
-        panelControlsLeft.add(jLabel1);
+        panelControls.add(jLabel1);
 
-        panelControlsInput.setLayout(new javax.swing.BoxLayout(panelControlsInput, javax.swing.BoxLayout.PAGE_AXIS));
+        panelControlsInput.setLayout(new java.awt.BorderLayout());
 
         jLabel2.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel2.setText("INPUT");
-        panelControlsInput.add(jLabel2);
+        panelControlsInput.add(jLabel2, java.awt.BorderLayout.NORTH);
+
+        buttonScanInputs.setText("Scan for Inputs");
+        buttonScanInputs.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                buttonScanInputsActionPerformed(evt);
+            }
+        });
+        panelControlsInput.add(buttonScanInputs, java.awt.BorderLayout.PAGE_END);
 
         jPanel3.setLayout(new java.awt.GridLayout(1, 0));
 
@@ -978,17 +1011,12 @@ public class Main extends javax.swing.JFrame{
 
         jPanel3.add(jPanel6);
 
-        panelControlsInput.add(jPanel3);
+        panelControlsInput.add(jPanel3, java.awt.BorderLayout.CENTER);
 
-        panelControlsLeft.add(panelControlsInput);
-
-        panelControlsCropping.setLayout(new javax.swing.BoxLayout(panelControlsCropping, javax.swing.BoxLayout.PAGE_AXIS));
+        panelControls.add(panelControlsInput);
 
         jLabel8.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel8.setText("Image Cropping");
-        panelControlsCropping.add(jLabel8);
-
-        panelCroppingMain.setLayout(new java.awt.GridLayout(2, 2));
 
         jPanel7.setLayout(new java.awt.GridLayout(2, 4));
 
@@ -1020,8 +1048,6 @@ public class Main extends javax.swing.JFrame{
         spinnerCropLeftBottom.setModel(new javax.swing.SpinnerNumberModel(0, 0, null, 1));
         jPanel7.add(spinnerCropLeftBottom);
 
-        panelCroppingMain.add(jPanel7);
-
         jPanel8.setLayout(new java.awt.GridLayout(2, 4));
 
         jLabel11.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
@@ -1052,8 +1078,6 @@ public class Main extends javax.swing.JFrame{
         spinnerCropRightBottom.setModel(new javax.swing.SpinnerNumberModel(0, 0, null, 1));
         jPanel8.add(spinnerCropRightBottom);
 
-        panelCroppingMain.add(jPanel8);
-
         jPanel9.setLayout(new java.awt.GridLayout(1, 0));
 
         boxLeftFlipX.setText("Flip X");
@@ -1061,8 +1085,6 @@ public class Main extends javax.swing.JFrame{
 
         boxLeftFlipY.setText("Flip Y");
         jPanel9.add(boxLeftFlipY);
-
-        panelCroppingMain.add(jPanel9);
 
         jPanel10.setLayout(new java.awt.GridLayout(1, 0));
 
@@ -1106,30 +1128,15 @@ public class Main extends javax.swing.JFrame{
                 .addContainerGap())
         );
 
-        panelControlsCropping.add(panelCroppingMain);
-
-        panelControlsLeft.add(panelControlsCropping);
-
-        panelControlsEyeCropping.setLayout(new java.awt.GridLayout(0, 1));
+        panelControls.add(panelControlsCropping);
 
         jLabel26.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel26.setText("TRACKING SETUP");
-        panelControlsEyeCropping.add(jLabel26);
-
-        jPanel12.setLayout(new javax.swing.BoxLayout(jPanel12, javax.swing.BoxLayout.LINE_AXIS));
 
         jLabel27.setText("Radius");
-        jPanel12.add(jLabel27);
 
         spinnerRadius.setModel(new javax.swing.SpinnerNumberModel(1, 1, null, 1));
         spinnerRadius.setValue(10);
-        jPanel12.add(spinnerRadius);
-
-        boxAntiFlicker.setText("Anti-Flicker");
-        boxAntiFlicker.setToolTipText("Ignores new frames that that differ greatly from the previous frame");
-        jPanel12.add(boxAntiFlicker);
-
-        panelControlsEyeCropping.add(jPanel12);
 
         buttonResetFocalPoints.setText("Reset Focal Points");
         buttonResetFocalPoints.addActionListener(new java.awt.event.ActionListener() {
@@ -1137,9 +1144,9 @@ public class Main extends javax.swing.JFrame{
                 buttonResetFocalPointsActionPerformed(evt);
             }
         });
-        panelControlsEyeCropping.add(buttonResetFocalPoints);
 
-        panelControlsLeft.add(panelControlsEyeCropping);
+        boxAntiFlicker.setText("Anti-Flicker");
+        boxAntiFlicker.setToolTipText("Ignores new frames that that differ greatly from the previous frame");
 
         javax.swing.GroupLayout panelControlsEyeCroppingLayout = new javax.swing.GroupLayout(panelControlsEyeCropping);
         panelControlsEyeCropping.setLayout(panelControlsEyeCroppingLayout);
@@ -1173,37 +1180,7 @@ public class Main extends javax.swing.JFrame{
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        jLabel25.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel25.setText("INPUT SCANNER");
-        panelInputScanner.add(jLabel25);
-
-        buttonScanInputs.setText("Scan for Inputs");
-        buttonScanInputs.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                buttonScanInputsActionPerformed(evt);
-            }
-        });
-        panelInputScanner.add(buttonScanInputs);
-
-        panelControlsLeft.add(panelInputScanner);
-
-        panelOutput.setLayout(new java.awt.BorderLayout());
-
-        jLabel29.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel29.setText("STATUS/DEBUG");
-        panelOutput.add(jLabel29, java.awt.BorderLayout.NORTH);
-
-        textAreaOutput.setColumns(20);
-        textAreaOutput.setRows(5);
-        jScrollPane2.setViewportView(textAreaOutput);
-
-        panelOutput.add(jScrollPane2, java.awt.BorderLayout.CENTER);
-
-        panelControlsLeft.add(panelOutput);
-
-        panelControls.add(panelControlsLeft);
-
-        panelControlsRight.setLayout(new javax.swing.BoxLayout(panelControlsRight, javax.swing.BoxLayout.PAGE_AXIS));
+        panelControls.add(panelControlsEyeCropping);
 
         jLabel5.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel5.setText("CALIBRATION");
@@ -1284,7 +1261,7 @@ public class Main extends javax.swing.JFrame{
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                    .addComponent(buttonCalibrateLeftEye, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(buttonCalibrateLeftEye, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addComponent(buttonCalibrateLeftLeft, javax.swing.GroupLayout.PREFERRED_SIZE, 39, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(6, 6, 6)
@@ -1295,7 +1272,7 @@ public class Main extends javax.swing.JFrame{
                                 .addComponent(buttonCalibrateLeftCenter)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(buttonCalibrateLeftRight)))))
-                .addGap(0, 0, Short.MAX_VALUE))
+                .addGap(0, 1, Short.MAX_VALUE))
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -1460,7 +1437,7 @@ public class Main extends javax.swing.JFrame{
                 .addContainerGap())
         );
 
-        panelControlsRight.add(panelControlsCalibration);
+        panelControls.add(panelControlsCalibration);
 
         jLabel28.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel28.setText("STABILITY");
@@ -1504,7 +1481,7 @@ public class Main extends javax.swing.JFrame{
         spinnerReconnectTimeout.setModel(new javax.swing.SpinnerNumberModel(1000, 1, null, 1));
         spinnerReconnectTimeout.setToolTipText("Automatically reconnects after recieving no frames from the camera for an amount of time.");
 
-        jPanel14.setLayout(new java.awt.GridLayout());
+        jPanel14.setLayout(new java.awt.GridLayout(1, 0));
 
         jPanel15.setLayout(new java.awt.GridLayout(0, 2));
 
@@ -1621,7 +1598,7 @@ public class Main extends javax.swing.JFrame{
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        panelControlsRight.add(panelControlsStability);
+        panelControls.add(panelControlsStability);
 
         jPanel11.setLayout(new java.awt.GridLayout(0, 2));
 
@@ -1697,7 +1674,7 @@ public class Main extends javax.swing.JFrame{
                 .addContainerGap())
         );
 
-        panelControlsRight.add(panelControlsOSC);
+        panelControls.add(panelControlsOSC);
 
         buttonSave.setText("Save Configuration");
         buttonSave.addActionListener(new java.awt.event.ActionListener() {
@@ -1734,9 +1711,7 @@ public class Main extends javax.swing.JFrame{
                 .addContainerGap())
         );
 
-        panelControlsRight.add(panelSaveLoad);
-
-        panelControls.add(panelControlsRight);
+        panelControls.add(panelSaveLoad);
 
         jScrollPane1.setViewportView(panelControls);
 
@@ -2035,6 +2010,7 @@ public class Main extends javax.swing.JFrame{
     private void boxAutoShutdownActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_boxAutoShutdownActionPerformed
         resetAutoShutdown();
     }//GEN-LAST:event_boxAutoShutdownActionPerformed
+
     private void buttonScanInputsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonScanInputsActionPerformed
         HashSet<String> addresses = new HashSet<>();
         String lef = textFieldAddressLeft.getText();
@@ -2055,7 +2031,7 @@ public class Main extends javax.swing.JFrame{
     }//GEN-LAST:event_buttonScanInputsActionPerformed
     private void scanForImageStreams(String[] addresses){
         Thread scan = new Thread(()->{
-            println("Scanning "+addresses.length+" ip addresses...");
+            System.out.println("Scanning "+addresses.length+" ip addresses...");
             ArrayList<String> good = new ArrayList<>();
             boolean[] done = new boolean[addresses.length];
             for(int i = 0; i<addresses.length; i++){
@@ -2065,13 +2041,13 @@ public class Main extends javax.swing.JFrame{
                     boolean[] isGood = {false};
                     int[] tries = new int[1];
                     try{
-                        startImageStream(ip, (im)->{
+                        startBadImageStream(ip, (im)->{
                             isGood[0] = true;
                             throw new RuntimeException();//stop the stream
                         });
                     }catch(Exception ex){
                         if(ex.getMessage().equals("Unable to download null"))isGood[0] = true;
-                        if(isGood[0])println("Found "+ip+(ex.getMessage().equals("Unable to download null")?"?":"!"));
+                        if(isGood[0])System.out.println("Found "+ip+(ex.getMessage().equals("Unable to download null")?"?":"!"));
                         done[idx] = true;
                     }
                     if(isGood[0])good.add(ip);
@@ -2086,8 +2062,9 @@ public class Main extends javax.swing.JFrame{
                 }
                 if(allDone)break;
             }
-            println("Done! found "+good.size()+" things"+(good.isEmpty()?"":":"));
-            for(String s : good)println(s);
+            String mess = " found "+good.size()+" things"+(good.isEmpty()?"":":");
+            for(String s : good)mess+="\n"+s;
+            JOptionPane.showMessageDialog(null, mess, "Scan complete!", JOptionPane.INFORMATION_MESSAGE);
         });
         scan.setDaemon(true);
         scan.start();
@@ -2290,13 +2267,9 @@ public class Main extends javax.swing.JFrame{
     private javax.swing.JPanel panelControlsCropping;
     private javax.swing.JPanel panelControlsEyeCropping;
     private javax.swing.JPanel panelControlsInput;
-    private javax.swing.JPanel panelControlsLeft;
     private javax.swing.JPanel panelControlsOSC;
-    private javax.swing.JPanel panelControlsRight;
     private javax.swing.JPanel panelControlsStability;
-    private javax.swing.JPanel panelCroppingMain;
     private javax.swing.JPanel panelInputRaw;
-    private javax.swing.JPanel panelInputScanner;
     private javax.swing.JPanel panelInputStatus;
     private javax.swing.JPanel panelInputStatusDual;
     private javax.swing.JPanel panelInputStatusLeft;
@@ -2305,7 +2278,6 @@ public class Main extends javax.swing.JFrame{
     private javax.swing.JPanel panelInputs;
     private javax.swing.JPanel panelInputsRawDisplay;
     private javax.swing.JPanel panelInputsTrackedDisplay;
-    private javax.swing.JPanel panelOutput;
     private javax.swing.JPanel panelSaveLoad;
     private javax.swing.JPanel panelStatusLightLeft;
     private javax.swing.JPanel panelStatusLightRight;
@@ -2545,10 +2517,6 @@ public class Main extends javax.swing.JFrame{
     long startupTime = System.nanoTime();
     private void resetAutoShutdown(){
         startupTime = System.nanoTime();
-    }
-    private synchronized void println(String string){
-        System.out.println(string);
-        textAreaOutput.setText(textAreaOutput.getText()+string+"\n");
     }
     private class SpecialMouseListener implements MouseListener, MouseMotionListener{
         private final JPanel panel;
