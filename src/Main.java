@@ -171,16 +171,16 @@ public class Main extends javax.swing.JFrame{
                             for(long l : leftTime){
                                 avg+=l;
                             }
-                            avg/=leftTime.size();
+                            if(!leftTime.isEmpty())avg/=leftTime.size();
                             lefTim = avg;
                         }
                         synchronized(rightTime){
                             while(rightTime.size()>1000)rightTime.remove(0);
                             long avg = 0;
-                            for(long l : leftTime){
+                            for(long l : rightTime){
                                 avg+=l;
                             }
-                            avg/=leftTime.size();
+                            if(!rightTime.isEmpty())avg/=rightTime.size();
                             rigTim = avg;
                         }
                         synchronized(eyeOpen){
@@ -489,7 +489,7 @@ public class Main extends javax.swing.JFrame{
     private BufferedImage process2(BufferedImage im, int eyeIndex){
         if(im==null)return im;
         ArrayList<int[]> XY = new ArrayList<>();
-        int ocount = 0;//numba of pixels found for eye openness
+        ArrayList<int[]> OXY = new ArrayList<>();
         int fp1x = eyeIndex==0?lfp1x:rfp1x;
         int fp1y = eyeIndex==0?lfp1y:rfp1y;
         int fp2x = eyeIndex==0?lfp2x:rfp2x;
@@ -514,10 +514,7 @@ public class Main extends javax.swing.JFrame{
                 }
                 if(boxEyeOpenness.isSelected()){
                     if(brightness>sliderOpenThresholdMin.getValue()&&brightness<sliderOpenThresholdMax.getValue()){
-                        c = Color.orange;
-                        if(brightness>minThreshold&&brightness<maxThreshold)c = redorange;
-                        ocount++;
-                        im.setRGB(x, y, c.getRGB());
+                        OXY.add(new int[]{x, y});
                     }
                 }
             }
@@ -553,8 +550,10 @@ public class Main extends javax.swing.JFrame{
             Y+=xy[1];
             count++;
         }
-        X/=count;
-        Y/=count;
+        if(count>0){
+            X/=count;
+            Y/=count;
+        }
         for(int i = 0; i<(int)spinnerGlobIterations.getValue(); i++){
             for (Iterator<int[]> it = XY.iterator(); it.hasNext();) {
                 int[] next = it.next();
@@ -566,10 +565,55 @@ public class Main extends javax.swing.JFrame{
                 Y+=xy[1];
                 count++;
             }
-            X/=count;
-            Y/=count;
+            if(count>0){
+                X/=count;
+                Y/=count;
+            }
+        }
+        int oX = 0;
+        int oY = 0;
+        int ocount = 0;
+        for(int[] xy : OXY){
+            oX+=xy[0];
+            oY+=xy[1];
+            ocount++;
+        }
+        if(ocount>0){
+            oX/=ocount;
+            oY/=ocount;
+        }
+        for(int i = 0; i<(int)spinnerOpenGlobIterations.getValue(); i++){
+            for (Iterator<int[]> it = OXY.iterator(); it.hasNext();) {
+                int[] next = it.next();
+                if(Math.sqrt(Math.pow(next[0]-oX,2)+Math.pow(next[1]-oY,2))>(int)spinnerOpenGlobRadius.getValue())it.remove();
+            }
+            oX = oY = ocount = 0;
+            for(int[] xy : OXY){
+                oX+=xy[0];
+                oY+=xy[1];
+                ocount++;
+            }
+            if(ocount>0){
+                oX/=ocount;
+                oY/=ocount;
+            }
         }
         for(int[] xy : XY){
+            im.setRGB(xy[0], xy[1], Color.red.getRGB());
+        }
+        for(int[] xy : OXY){
+            im.setRGB(xy[0], xy[1], redorange.getRGB());
+        }
+        for (Iterator<int[]> it = OXY.iterator(); it.hasNext();) {
+            int[] a = it.next();
+            for(int[] b : XY){
+                if(a[0]==b[0]&&a[1]==b[1]){
+                    it.remove();
+                    break;
+                }
+            }
+        }
+        for(int[] xy : OXY){
             im.setRGB(xy[0], xy[1], Color.red.getRGB());
         }
         //GLOB TRACK XY TO X AND Y AND COUNT
@@ -885,12 +929,17 @@ public class Main extends javax.swing.JFrame{
         buttonCalibrateAll = new javax.swing.JButton();
         boxInvertBlink = new javax.swing.JCheckBox();
         jPanel12 = new javax.swing.JPanel();
-        boxEyeOpenness = new javax.swing.JCheckBox();
         jPanel13 = new javax.swing.JPanel();
         jLabel29 = new javax.swing.JLabel();
         jLabel30 = new javax.swing.JLabel();
         sliderOpenThresholdMin = new javax.swing.JSlider();
         sliderOpenThresholdMax = new javax.swing.JSlider();
+        jPanel19 = new javax.swing.JPanel();
+        boxEyeOpenness = new javax.swing.JCheckBox();
+        jLabel42 = new javax.swing.JLabel();
+        spinnerOpenGlobRadius = new javax.swing.JSpinner();
+        jLabel43 = new javax.swing.JLabel();
+        spinnerOpenGlobIterations = new javax.swing.JSpinner();
         panelControlsStability = new javax.swing.JPanel();
         jLabel28 = new javax.swing.JLabel();
         boxCombineLook = new javax.swing.JCheckBox();
@@ -1508,9 +1557,6 @@ public class Main extends javax.swing.JFrame{
 
         jPanel12.setLayout(new java.awt.BorderLayout());
 
-        boxEyeOpenness.setText("Use Eye Openness");
-        jPanel12.add(boxEyeOpenness, java.awt.BorderLayout.NORTH);
-
         jPanel13.setLayout(new java.awt.GridLayout(0, 2));
 
         jLabel29.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
@@ -1530,6 +1576,25 @@ public class Main extends javax.swing.JFrame{
         jPanel13.add(sliderOpenThresholdMax);
 
         jPanel12.add(jPanel13, java.awt.BorderLayout.CENTER);
+
+        jPanel19.setLayout(new javax.swing.BoxLayout(jPanel19, javax.swing.BoxLayout.LINE_AXIS));
+
+        boxEyeOpenness.setText("Use Eye Openness");
+        jPanel19.add(boxEyeOpenness);
+
+        jLabel42.setText("    Glob Radius");
+        jPanel19.add(jLabel42);
+
+        spinnerOpenGlobRadius.setModel(new javax.swing.SpinnerNumberModel(1, 1, null, 1));
+        jPanel19.add(spinnerOpenGlobRadius);
+
+        jLabel43.setText("    Glob Iterations");
+        jPanel19.add(jLabel43);
+
+        spinnerOpenGlobIterations.setModel(new javax.swing.SpinnerNumberModel(0, 0, null, 1));
+        jPanel19.add(spinnerOpenGlobIterations);
+
+        jPanel12.add(jPanel19, java.awt.BorderLayout.NORTH);
 
         javax.swing.GroupLayout panelControlsCalibrationLayout = new javax.swing.GroupLayout(panelControlsCalibration);
         panelControlsCalibration.setLayout(panelControlsCalibrationLayout);
@@ -1792,7 +1857,7 @@ public class Main extends javax.swing.JFrame{
             .addGroup(panelControlsOSCLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(panelControlsOSCLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jPanel11, javax.swing.GroupLayout.DEFAULT_SIZE, 400, Short.MAX_VALUE)
+                    .addComponent(jPanel11, javax.swing.GroupLayout.DEFAULT_SIZE, 640, Short.MAX_VALUE)
                     .addComponent(jLabel24, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
@@ -2137,24 +2202,82 @@ public class Main extends javax.swing.JFrame{
     }//GEN-LAST:event_buttonScanInputsActionPerformed
     private void buttonCalibrateGradientLeftActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonCalibrateGradientLeftActionPerformed
         new Thread(() -> {
-            calibrateLeft("left gradient", () -> {
-                leftGradient = blur(leftEyeRaw, sliderGradientBlur.getValue());
+            ArrayList<BufferedImage> leftGradients = new ArrayList<>();
+            calibrateLeft("up", () -> {
+                leftGradients.add(blur(leftEyeRaw, sliderGradientBlur.getValue()));
             });
+            calibrateLeft("down", () -> {
+                leftGradients.add(blur(leftEyeRaw, sliderGradientBlur.getValue()));
+            });
+            calibrateLeft("left", () -> {
+                leftGradients.add(blur(leftEyeRaw, sliderGradientBlur.getValue()));
+            });
+            calibrateLeft("right", () -> {
+                leftGradients.add(blur(leftEyeRaw, sliderGradientBlur.getValue()));
+            });
+            calibrateLeft("center", () -> {
+                leftGradients.add(blur(leftEyeRaw, sliderGradientBlur.getValue()));
+            });
+            calibrateLeft("closed", () -> {
+                leftGradients.add(blur(leftEyeRaw, sliderGradientBlur.getValue()));
+            });
+            leftGradient = average(leftGradients);
         }).start();
     }//GEN-LAST:event_buttonCalibrateGradientLeftActionPerformed
     private void buttonCalibrateGradientBothActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonCalibrateGradientBothActionPerformed
         new Thread(() -> {
-            calibrateBoth("gradients", () -> {
-                leftGradient = blur(leftEyeRaw, sliderGradientBlur.getValue());
-                rightGradient = blur(rightEyeRaw, sliderGradientBlur.getValue());
+            ArrayList<BufferedImage> leftGradients = new ArrayList<>();
+            ArrayList<BufferedImage> rightGradients = new ArrayList<>();
+            calibrateBoth("up", () -> {
+                leftGradients.add(blur(leftEyeRaw, sliderGradientBlur.getValue()));
+                rightGradients.add(blur(rightEyeRaw, sliderGradientBlur.getValue()));
             });
+            calibrateBoth("down", () -> {
+                leftGradients.add(blur(leftEyeRaw, sliderGradientBlur.getValue()));
+                rightGradients.add(blur(rightEyeRaw, sliderGradientBlur.getValue()));
+            });
+            calibrateBoth("left", () -> {
+                leftGradients.add(blur(leftEyeRaw, sliderGradientBlur.getValue()));
+                rightGradients.add(blur(rightEyeRaw, sliderGradientBlur.getValue()));
+            });
+            calibrateBoth("right", () -> {
+                leftGradients.add(blur(leftEyeRaw, sliderGradientBlur.getValue()));
+                rightGradients.add(blur(rightEyeRaw, sliderGradientBlur.getValue()));
+            });
+            calibrateBoth("center", () -> {
+                leftGradients.add(blur(leftEyeRaw, sliderGradientBlur.getValue()));
+                rightGradients.add(blur(rightEyeRaw, sliderGradientBlur.getValue()));
+            });
+            calibrateBoth("closed", () -> {
+                leftGradients.add(blur(leftEyeRaw, sliderGradientBlur.getValue()));
+                rightGradients.add(blur(rightEyeRaw, sliderGradientBlur.getValue()));
+            });
+            leftGradient = average(leftGradients);
+            rightGradient = average(rightGradients);
         }).start();
     }//GEN-LAST:event_buttonCalibrateGradientBothActionPerformed
     private void buttonCalibrateGradientRightActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonCalibrateGradientRightActionPerformed
         new Thread(() -> {
-            calibrateRight("right gradient", () -> {
-                rightGradient = blur(rightEyeRaw, sliderGradientBlur.getValue());
+            ArrayList<BufferedImage> rightGradients = new ArrayList<>();
+            calibrateRight("up", () -> {
+                rightGradients.add(blur(rightEyeRaw, sliderGradientBlur.getValue()));
             });
+            calibrateRight("down", () -> {
+                rightGradients.add(blur(rightEyeRaw, sliderGradientBlur.getValue()));
+            });
+            calibrateRight("left", () -> {
+                rightGradients.add(blur(rightEyeRaw, sliderGradientBlur.getValue()));
+            });
+            calibrateRight("right", () -> {
+                rightGradients.add(blur(rightEyeRaw, sliderGradientBlur.getValue()));
+            });
+            calibrateRight("center", () -> {
+                rightGradients.add(blur(rightEyeRaw, sliderGradientBlur.getValue()));
+            });
+            calibrateRight("closed", () -> {
+                rightGradients.add(blur(rightEyeRaw, sliderGradientBlur.getValue()));
+            });
+            rightGradient = average(rightGradients);
         }).start();
     }//GEN-LAST:event_buttonCalibrateGradientRightActionPerformed
     private void buttonYeetGradientLeftActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonYeetGradientLeftActionPerformed
@@ -2232,8 +2355,8 @@ public class Main extends javax.swing.JFrame{
             if(check)break;
         }
         if(check){
-            tts.say("Done.");
             calibrate.run();
+            tts.say("Done.");
         }else{
             tts.say("Calibration Failed.");
         }
@@ -2375,6 +2498,8 @@ public class Main extends javax.swing.JFrame{
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel40;
     private javax.swing.JLabel jLabel41;
+    private javax.swing.JLabel jLabel42;
+    private javax.swing.JLabel jLabel43;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
@@ -2390,6 +2515,7 @@ public class Main extends javax.swing.JFrame{
     private javax.swing.JPanel jPanel16;
     private javax.swing.JPanel jPanel17;
     private javax.swing.JPanel jPanel18;
+    private javax.swing.JPanel jPanel19;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
@@ -2453,6 +2579,8 @@ public class Main extends javax.swing.JFrame{
     private javax.swing.JSpinner spinnerCropRightTop;
     private javax.swing.JSpinner spinnerGlobIterations;
     private javax.swing.JSpinner spinnerGlobRadius;
+    private javax.swing.JSpinner spinnerOpenGlobIterations;
+    private javax.swing.JSpinner spinnerOpenGlobRadius;
     private javax.swing.JSpinner spinnerRadius;
     private javax.swing.JSpinner spinnerReconnectTimeout;
     private javax.swing.JTextField textFieldAddressLeft;
@@ -2483,7 +2611,7 @@ public class Main extends javax.swing.JFrame{
                             +"|"+boxLeftEyeOpenness.getText()
                             +"|"+boxRightEyeOpenness.getText()
                             +"|"+stringify(llo,luo,lro,ldo,lco,rlo,ruo,rro,rdo,rdo,loo,roo)
-                            +"|"+stringify(sliderGradientBlur.getValue(), (int)spinnerGlobRadius.getValue(), (int)spinnerGlobIterations.getValue())
+                            +"|"+stringify(sliderGradientBlur.getValue(), (int)spinnerGlobRadius.getValue(), (int)spinnerGlobIterations.getValue(), (int)spinnerOpenGlobRadius.getValue(), (int)spinnerOpenGlobIterations.getValue())
             );
             File gradient = new File("left-gradient.png");
             if(leftGradient!=null)ImageIO.write(leftGradient, "png", gradient);
@@ -2605,6 +2733,8 @@ public class Main extends javax.swing.JFrame{
             sliderGradientBlur.setValue(gbl[0]);
             spinnerGlobRadius.setValue(gbl[1]);
             spinnerGlobIterations.setValue(gbl[2]);
+            spinnerOpenGlobRadius.setValue(gbl[3]);
+            spinnerOpenGlobIterations.setValue(gbl[4]);
             File gradient = new File("left-gradient.png");
             if(gradient.exists())leftGradient = ImageIO.read(gradient);
             gradient = new File("right-gradient.png");
@@ -2668,6 +2798,10 @@ public class Main extends javax.swing.JFrame{
         int y = (int)(panel.getHeight()*(fy+1)/2);
         g.drawLine(x, 0, x, panel.getHeight());
         g.drawLine(0, y, panel.getWidth(), y);
+        if(boxEyeOpenness.isSelected()){
+            y = (int)(panel.getHeight()*(1-(eye==1?roOut:loOut)));
+            g.drawLine(0, y, panel.getWidth(), y);
+        }
         if(boxCombineLook.isSelected()){
             g.setColor(Color.white);
             x = (int)(panel.getWidth()*(xOut+1)/2);
@@ -2716,6 +2850,25 @@ public class Main extends javax.swing.JFrame{
             }
         }
         return newImage;
+    }
+    private BufferedImage average(ArrayList<BufferedImage> imgs){
+        BufferedImage average = new BufferedImage(imgs.get(0).getWidth(), imgs.get(0).getHeight(), imgs.get(0).getType());
+        for(int x = 0; x<average.getWidth(); x++){
+            for(int y = 0; y<average.getHeight(); y++){
+                int r = 0, g = 0, b = 0;
+                for(BufferedImage img : imgs){
+                    Color c = new Color(img.getRGB(x, y));
+                    r+=c.getRed();
+                    g+=c.getGreen();
+                    b+=c.getBlue();
+                }
+                r/=imgs.size();
+                g/=imgs.size();
+                b/=imgs.size();
+                average.setRGB(x, y, new Color(r, g, b).getRGB());
+            }
+        }
+        return average;
     }
     private class SpecialMouseListener implements MouseListener, MouseMotionListener{
         private final JPanel panel;
