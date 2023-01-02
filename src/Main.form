@@ -352,6 +352,85 @@
                 </Container>
               </SubComponents>
             </Container>
+            <Container class="javax.swing.JPanel" name="panelControlsGradient">
+
+              <Layout class="org.netbeans.modules.form.compat2.layouts.DesignGridLayout">
+                <Property name="columns" type="int" value="1"/>
+                <Property name="rows" type="int" value="0"/>
+              </Layout>
+              <SubComponents>
+                <Component class="javax.swing.JLabel" name="labelGradient">
+                  <Properties>
+                    <Property name="horizontalAlignment" type="int" value="0"/>
+                    <Property name="text" type="java.lang.String" value="Calibration Gradient"/>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JSlider" name="sliderGradientBlur">
+                  <Properties>
+                    <Property name="maximum" type="int" value="1000"/>
+                    <Property name="value" type="int" value="100"/>
+                  </Properties>
+                </Component>
+                <Container class="javax.swing.JPanel" name="panelCalibrateGradients">
+
+                  <Layout class="org.netbeans.modules.form.compat2.layouts.DesignGridLayout">
+                    <Property name="columns" type="int" value="0"/>
+                    <Property name="rows" type="int" value="1"/>
+                  </Layout>
+                  <SubComponents>
+                    <Component class="javax.swing.JButton" name="buttonCalibrateGradientLeft">
+                      <Properties>
+                        <Property name="text" type="java.lang.String" value="Calibrate Left"/>
+                      </Properties>
+                      <Events>
+                        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="buttonCalibrateGradientLeftActionPerformed"/>
+                      </Events>
+                    </Component>
+                    <Component class="javax.swing.JButton" name="buttonCalibrateGradientBoth">
+                      <Properties>
+                        <Property name="text" type="java.lang.String" value="Calibrate Both"/>
+                      </Properties>
+                      <Events>
+                        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="buttonCalibrateGradientBothActionPerformed"/>
+                      </Events>
+                    </Component>
+                    <Component class="javax.swing.JButton" name="buttonCalibrateGradientRight">
+                      <Properties>
+                        <Property name="text" type="java.lang.String" value="Calibrate Right"/>
+                      </Properties>
+                      <Events>
+                        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="buttonCalibrateGradientRightActionPerformed"/>
+                      </Events>
+                    </Component>
+                  </SubComponents>
+                </Container>
+                <Container class="javax.swing.JPanel" name="panelYeetGradients">
+
+                  <Layout class="org.netbeans.modules.form.compat2.layouts.DesignGridLayout">
+                    <Property name="columns" type="int" value="0"/>
+                    <Property name="rows" type="int" value="1"/>
+                  </Layout>
+                  <SubComponents>
+                    <Component class="javax.swing.JButton" name="buttonYeetGradientLeft">
+                      <Properties>
+                        <Property name="text" type="java.lang.String" value="Reset Left"/>
+                      </Properties>
+                      <Events>
+                        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="buttonYeetGradientLeftActionPerformed"/>
+                      </Events>
+                    </Component>
+                    <Component class="javax.swing.JButton" name="buttonYeetGradientRight">
+                      <Properties>
+                        <Property name="text" type="java.lang.String" value="Reset Right"/>
+                      </Properties>
+                      <Events>
+                        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="buttonYeetGradientRightActionPerformed"/>
+                      </Events>
+                    </Component>
+                  </SubComponents>
+                </Container>
+              </SubComponents>
+            </Container>
             <Container class="javax.swing.JPanel" name="panelControlsCropping">
 
               <Layout>
@@ -568,65 +647,18 @@
             </Container>
             <Container class="javax.swing.JPanel" name="panelControlsEyeCropping">
 
-              <Layout>
-                <DimensionLayout dim="0">
-                  <Group type="103" groupAlignment="0" attributes="0">
-                      <Group type="102" attributes="0">
-                          <EmptySpace max="-2" attributes="0"/>
-                          <Group type="103" groupAlignment="0" attributes="0">
-                              <Component id="jLabel26" max="32767" attributes="0"/>
-                              <Group type="102" attributes="0">
-                                  <Component id="jLabel27" min="-2" max="-2" attributes="0"/>
-                                  <EmptySpace type="unrelated" max="-2" attributes="0"/>
-                                  <Component id="spinnerRadius" min="-2" pref="50" max="-2" attributes="0"/>
-                                  <EmptySpace type="unrelated" max="-2" attributes="0"/>
-                                  <Component id="boxAntiFlicker" pref="302" max="32767" attributes="0"/>
-                              </Group>
-                              <Component id="buttonResetFocalPoints" alignment="0" max="32767" attributes="0"/>
-                          </Group>
-                          <EmptySpace max="-2" attributes="0"/>
-                      </Group>
-                  </Group>
-                </DimensionLayout>
-                <DimensionLayout dim="1">
-                  <Group type="103" groupAlignment="0" attributes="0">
-                      <Group type="102" alignment="0" attributes="0">
-                          <EmptySpace max="-2" attributes="0"/>
-                          <Component id="jLabel26" min="-2" max="-2" attributes="0"/>
-                          <EmptySpace max="-2" attributes="0"/>
-                          <Group type="103" groupAlignment="3" attributes="0">
-                              <Component id="jLabel27" alignment="3" min="-2" pref="20" max="-2" attributes="0"/>
-                              <Component id="spinnerRadius" alignment="3" max="32767" attributes="0"/>
-                              <Component id="boxAntiFlicker" alignment="3" min="-2" max="-2" attributes="0"/>
-                          </Group>
-                          <EmptySpace max="-2" attributes="0"/>
-                          <Component id="buttonResetFocalPoints" min="-2" max="-2" attributes="0"/>
-                          <EmptySpace max="32767" attributes="0"/>
-                      </Group>
-                  </Group>
-                </DimensionLayout>
-              </Layout>
+              <Layout class="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout"/>
               <SubComponents>
                 <Component class="javax.swing.JLabel" name="jLabel26">
                   <Properties>
                     <Property name="horizontalAlignment" type="int" value="0"/>
                     <Property name="text" type="java.lang.String" value="TRACKING SETUP"/>
                   </Properties>
-                </Component>
-                <Component class="javax.swing.JLabel" name="jLabel27">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" value="Radius"/>
-                  </Properties>
-                </Component>
-                <Component class="javax.swing.JSpinner" name="spinnerRadius">
-                  <Properties>
-                    <Property name="model" type="javax.swing.SpinnerModel" editor="org.netbeans.modules.form.editors2.SpinnerModelEditor">
-                      <SpinnerModel initial="1" minimum="1" numberType="java.lang.Integer" stepSize="1" type="number"/>
-                    </Property>
-                    <Property name="value" type="java.lang.Object" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-                      <Connection code="10" type="code"/>
-                    </Property>
-                  </Properties>
+                  <Constraints>
+                    <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout" value="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout$BorderConstraintsDescription">
+                      <BorderConstraints direction="North"/>
+                    </Constraint>
+                  </Constraints>
                 </Component>
                 <Component class="javax.swing.JButton" name="buttonResetFocalPoints">
                   <Properties>
@@ -635,13 +667,68 @@
                   <Events>
                     <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="buttonResetFocalPointsActionPerformed"/>
                   </Events>
+                  <Constraints>
+                    <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout" value="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout$BorderConstraintsDescription">
+                      <BorderConstraints direction="South"/>
+                    </Constraint>
+                  </Constraints>
                 </Component>
-                <Component class="javax.swing.JCheckBox" name="boxAntiFlicker">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" value="Anti-Flicker"/>
-                    <Property name="toolTipText" type="java.lang.String" value="Ignores new frames that that differ greatly from the previous frame"/>
-                  </Properties>
-                </Component>
+                <Container class="javax.swing.JPanel" name="jPanel18">
+                  <Constraints>
+                    <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout" value="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout$BorderConstraintsDescription">
+                      <BorderConstraints direction="Center"/>
+                    </Constraint>
+                  </Constraints>
+
+                  <Layout class="org.netbeans.modules.form.compat2.layouts.DesignBoxLayout"/>
+                  <SubComponents>
+                    <Component class="javax.swing.JLabel" name="jLabel27">
+                      <Properties>
+                        <Property name="text" type="java.lang.String" value="Radius"/>
+                      </Properties>
+                    </Component>
+                    <Component class="javax.swing.JSpinner" name="spinnerRadius">
+                      <Properties>
+                        <Property name="model" type="javax.swing.SpinnerModel" editor="org.netbeans.modules.form.editors2.SpinnerModelEditor">
+                          <SpinnerModel initial="1" minimum="1" numberType="java.lang.Integer" stepSize="1" type="number"/>
+                        </Property>
+                        <Property name="value" type="java.lang.Object" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                          <Connection code="10" type="code"/>
+                        </Property>
+                      </Properties>
+                    </Component>
+                    <Component class="javax.swing.JCheckBox" name="boxAntiFlicker">
+                      <Properties>
+                        <Property name="text" type="java.lang.String" value="Anti-Flicker"/>
+                        <Property name="toolTipText" type="java.lang.String" value="Ignores new frames that that differ greatly from the previous frame"/>
+                      </Properties>
+                    </Component>
+                    <Component class="javax.swing.JLabel" name="jLabel38">
+                      <Properties>
+                        <Property name="text" type="java.lang.String" value="    Glob Radius"/>
+                      </Properties>
+                    </Component>
+                    <Component class="javax.swing.JSpinner" name="spinnerGlobRadius">
+                      <Properties>
+                        <Property name="model" type="javax.swing.SpinnerModel" editor="org.netbeans.modules.form.editors2.SpinnerModelEditor">
+                          <SpinnerModel initial="100" minimum="1" numberType="java.lang.Integer" stepSize="1" type="number"/>
+                        </Property>
+                      </Properties>
+                    </Component>
+                    <Component class="javax.swing.JLabel" name="jLabel41">
+                      <Properties>
+                        <Property name="text" type="java.lang.String" value="    Glob Iterations"/>
+                      </Properties>
+                    </Component>
+                    <Component class="javax.swing.JSpinner" name="spinnerGlobIterations">
+                      <Properties>
+                        <Property name="model" type="javax.swing.SpinnerModel" editor="org.netbeans.modules.form.editors2.SpinnerModelEditor">
+                          <SpinnerModel initial="3" minimum="0" numberType="java.lang.Integer" stepSize="1" type="number"/>
+                        </Property>
+                      </Properties>
+                    </Component>
+                  </SubComponents>
+                </Container>
               </SubComponents>
             </Container>
             <Container class="javax.swing.JPanel" name="panelControlsCalibration">
